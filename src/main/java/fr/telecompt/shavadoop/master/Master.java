@@ -10,35 +10,51 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import fr.telecompt.shavadoop.master.thread.MapThread;
+import fr.telecompt.shavadoop.master.thread.ShufflingMapThread;
 import fr.telecompt.shavadoop.slave.Slave;
+import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Nfs;
 
 /**
- * "/cal/homes/prillard/.ssh/id_dsa"
+ * 
  *
  */
-public class Master
+public class Master extends Slave
 {
+	private List<String> filesToMap = new ArrayList<String>();
+	private Map<String, String> hostMappers = new HashMap<String, String>();
+	private List<String> hostnameMappers;
+	private String dsaKey;
+	private final int WAITING_TIMES_SYNCHRO_THREAD = 10;
 	
-	List<String> filesToMap = new ArrayList<String>();
-	Map<String, String> hostMappers = new HashMap<String, String>();
-	
-	public Master(String dsaFile, String fileIpAdress, String fileWordCount) {
-        System.out.println("Shavadoop word-count workflow on : " + fileWordCount);
-        //Step 1 : split the file
-        inputSplitting(fileWordCount);
+	public Master(String dsaFile, String fileIpAdress, String fileToTreat) {
+		
+    	//Get our hostname mappers
+		hostnameMappers = getHostMappers(fileIpAdress, filesToMap.size());
+    	//Get dsa key
+    	dsaKey = getDsaKey(dsaFile);
+    	
+        // Split the file
+        inputSplitting(fileToTreat);
+        // Launch maps process
         manageMapThread(dsaFile, fileIpAdress);
-        //
-        shufflingMaps();
+        // Create dictionary
+        Map<String, ArrayList<String>> groupedDictionary = createGroupedDictionary();
+        // Launch shuffling maps process
+        manageShufflingMapThread(groupedDictionary);
+        
+        // Launch reduces process
+//        manageReduceThread(); //TODO
 	}
     
 	public String getDsaKey(String dsaFile) {
-		String dsaKey="";
+		String dsaKey="";	
 
 		try {
 			InputStream ips=new FileInputStream(dsaFile); 
@@ -60,6 +76,7 @@ public class Master
      * @param originalFile
      */
     public void inputSplitting(String originalFile) {
+    	System.out.println("Shavadoop workflow on : " + originalFile);
 		 try {
              FileReader fic = new FileReader(originalFile);
              BufferedReader read = new BufferedReader(fic);
@@ -88,10 +105,6 @@ public class Master
      * @param fileIpAdress
      */
     public void manageMapThread(String dsaFile, String fileIpAdress) {
-    	//Get dsa key
-    	String dsaKey = getDsaKey(dsaFile);
-    	//Get our hostname mappers
-		List<String> hostnameMappers = getHostMappers(fileIpAdress, filesToMap.size());
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
 		//For each files to map
@@ -104,7 +117,7 @@ public class Master
 		es.shutdown();
 		//Wait while all the threads are not finished yet
 		try {
-			es.awaitTermination(1, TimeUnit.MINUTES);
+			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -148,7 +161,60 @@ public class Master
     	return hostnameMappers;
     }
     
-    public void shufflingMaps() {
+    public Map<String, ArrayList<String>> createGroupedDictionary() {
+    	Map<String, String> dictionary = new HashMap<String, String>();
+    	// Create dictionnary with socket
+    	//TODO
     	
+    	Map<String, ArrayList<String>> groupedDictionary = new HashMap<String, ArrayList<String>>();
+    	// Group by key
+    	for (Entry<String, String> e : dictionary.entrySet()) {
+    		String key_1 = e.getKey();
+    		if (!groupedDictionary.containsKey(key_1)) {
+	        	for (Entry<String, String> f : dictionary.entrySet()) {
+	        		String key_2 = f.getKey();
+	        		if (key_2.equalsIgnoreCase(key_1)) {
+	        			// Get the list of files for this key
+	        			ArrayList<String> listFiles = groupedDictionary.get(key_2);
+	        			// Add this file for this key
+	        			listFiles.add(f.getValue());
+		        		groupedDictionary.put(key_2, listFiles);
+	        		}
+	        	}
+    		}
+    	}
+    	return groupedDictionary;
+    }
+    
+    public void manageShufflingMapThread(Map<String, ArrayList<String>> dictionary) {
+		//Object to synchronize threads
+		ExecutorService es = Executors.newCachedThreadPool();
+		//For each files to shuffling maps
+		for (Entry<String, ArrayList<String>> e : dictionary.entrySet()) {
+			// Get the list of files which refers to a same word
+			List<String> listFiles = e.getValue();
+			// Select the first host who has already one of files to do the shuffling map
+			String hostOwner = hostMappers.get(listFiles.get(0));
+			// Parse the list of file to build a String with urls
+			String filesString = "";
+			for (String file : listFiles) {
+				filesString += file + Constant.FILES_SHUFFLING_MAP_SEPARATOR;
+			}
+			// Remove the last separator
+		    if (filesString.length() > 0
+		    		&& Character.toString(filesString.charAt(filesString.length()-1)).equals(Constant.FILES_SHUFFLING_MAP_SEPARATOR)) {
+		    	filesString = filesString.substring(0, filesString.length()-1);
+		    }
+			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString));
+		}
+
+		es.shutdown();
+		//Wait while all the threads are not finished yet
+		try {
+			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.out.println("Parallel Shuffling maps step done");
     }
 }

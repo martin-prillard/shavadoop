@@ -7,9 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class LocalRepoFile {
-
-	private final static String SEPARATOR = "\\s+";
-	private final static String FILE_SEPARATOR = ",\\s+";
 	
 	public static void writeFile(String nameFile, Map<String, Integer> content) {
 		try {
@@ -18,7 +15,7 @@ public class LocalRepoFile {
 			PrintWriter write = new PrintWriter (bw); 
 			for(Entry<String, Integer> entry : content.entrySet()) {
 			    write.println (entry.getKey()
-			    		+ FILE_SEPARATOR
+			    		+ Constant.FILE_SEPARATOR
 			    		+ entry.getValue()); 
 			}
 			write.close();
