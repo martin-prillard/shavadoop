@@ -5,8 +5,11 @@ import com.jcabi.ssh.Shell;
 
 public class ShufflingMapThread extends ShellThread {
 
-	public ShufflingMapThread(String _dsaKey, String _hostname, String _filesToShufflingMap) {
+	private String key;
+	
+	public ShufflingMapThread(String _dsaKey, String _hostname, String _filesToShufflingMap, String _key) {
 		super(_dsaKey, _hostname, _filesToShufflingMap);
+		key = _key;
 	}
 	
 	public void run() {
@@ -21,7 +24,9 @@ public class ShufflingMapThread extends ShellThread {
 				+ " " 
 				+ method 
 				+ " " 
-				+ fileToTreat);
+				+ fileToTreat
+				+ " "
+				+ key);
 		} catch (Exception e) {
 			System.out.println("Fail to connect to " + hostname);
 		}

@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import fr.telecompt.shavadoop.util.Constant;
@@ -22,7 +21,7 @@ public class Slave
 	
 	public Slave(){}
 	
-    public Slave(String functionName, String fileToTreat) {
+    public Slave(String functionName, String fileToTreat, String key) {
     	switch (functionName){
     	case MAP_FUNCTION:
     		//Launch map method
@@ -30,9 +29,9 @@ public class Slave
     		break;
     	case SHUFFLING_MAP_FUNCTION:
     		//Lanch shuffling map method
-    		String fileToReduce = shufflingMaps(fileToTreat);
-    		//Launch reduce method
-    		mappingSortedMaps(fileToReduce);
+    		String fileSortedMaps = shufflingMaps(key, fileToTreat);
+    		//Launch reduce method	
+    		mappingSortedMaps(fileSortedMaps);
     		break;
     	default:
     		System.out.println("Function name unknown");
@@ -135,7 +134,7 @@ public class Slave
     }
     
     //Group and sort maps results by key
-    public String shufflingMaps(String filesToTreat) {
+    public String shufflingMaps(String key, String filesToTreat) {
     	// Final file to reduce
     	String fileToReduce = null;
     	// Get the list of file
@@ -154,8 +153,11 @@ public class Slave
 	             // For each lines of the file
 	             while ((line = read.readLine()) != null) {
 		            String words[] = line.split(Constant.FILE_SEPARATOR);
-		            // Add each line to our hashmap
-	            	sortedMaps.put(words[0], Integer.parseInt(words[1]));
+		            // Search line refers to this key
+		            if (words[0].equalsIgnoreCase(key)) {
+			            // Add each line matched with the key to our hashmap
+		            	sortedMaps.put(words[0], Integer.parseInt(words[1]));
+		            }
 	             } 
 	        	 
 	             fic.close();

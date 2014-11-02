@@ -19,6 +19,7 @@ import fr.telecompt.shavadoop.master.thread.MapThread;
 import fr.telecompt.shavadoop.master.thread.ShufflingMapThread;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.LocalRepoFile;
 import fr.telecompt.shavadoop.util.Nfs;
 
 /**
@@ -48,9 +49,8 @@ public class Master extends Slave
         Map<String, ArrayList<String>> groupedDictionary = createGroupedDictionary();
         // Launch shuffling maps process
         manageShufflingMapThread(groupedDictionary);
-        
-        // Launch reduces process
-//        manageReduceThread(); //TODO
+        // Assembling final maps
+        assemblingFinalMaps();
 	}
     
 	public String getDsaKey(String dsaFile) {
@@ -205,7 +205,7 @@ public class Master extends Slave
 		    		&& Character.toString(filesString.charAt(filesString.length()-1)).equals(Constant.FILES_SHUFFLING_MAP_SEPARATOR)) {
 		    	filesString = filesString.substring(0, filesString.length()-1);
 		    }
-			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString));
+			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
 		}
 
 		es.shutdown();
@@ -216,5 +216,40 @@ public class Master extends Slave
 			e.printStackTrace();
 		}
 		System.out.println("Parallel Shuffling maps step done");
+    }
+    
+    public void assemblingFinalMaps() {
+    	// Final file to reduce
+    	String fileFinalResult = null;
+    	// Get the list of file
+    	String[] listFiles = null; //TODO search files from NFS
+ 
+    	// Concat data of each files in one
+		 try {
+             Map<String, Integer> finalResult = new HashMap<String, Integer>();
+             
+             // For each files
+			 for (int i = 0; i < listFiles.length; i++) {
+	             FileReader fic = new FileReader(listFiles[i]);
+	             BufferedReader read = new BufferedReader(fic);
+	             String line = null;
+	
+	             // For each lines of the file
+	             while ((line = read.readLine()) != null) {
+		            String words[] = line.split(Constant.FILE_SEPARATOR);
+		            // Add each line to our hashmap
+		            finalResult.put(words[0], Integer.parseInt(words[1]));
+	             } 
+	        	 
+	             fic.close();
+	             read.close();   
+			 }
+			 
+        	 String fileToAssemble = "Final_result";
+        	 LocalRepoFile.writeFile(fileToAssemble, finalResult);
+        	 
+         } catch (IOException e) {	
+             e.printStackTrace();
+         }
     }
 }
