@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -68,7 +69,7 @@ public class Slave
              read.close();   
     		 
              // Write UM File
-        	 String fileToShuffle = Constant.F_MAPPING;
+        	 String fileToShuffle = Constant.F_MAPPING + "_" + InetAddress.getLocalHost().getHostName();
         	 LocalRepoFile.writeFile(fileToShuffle, unsortedMaps);
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
         	 sendDictionaryElement(unsortedMaps, fileToShuffle);

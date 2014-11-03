@@ -51,6 +51,8 @@ public class Master extends Slave
 //		} catch (IOException e) {
 //			e.printStackTrace();
 //		}
+		
+		//TODO clean repo app
 	}
 	
 	/**
@@ -71,25 +73,25 @@ public class Master extends Slave
     	//Get our hostname mappers
 		List<String> hostMappers = getHostMappers(fileIpAdress);
 		
-//		System.out.println(">>> " + hostMappers); 
+//		System.out.println(">>> hostMappers : " + hostMappers); 
 		
     	//Get dsa key
 		String dsaKey = getDsaKey(dsaFile);
 		
-//		System.out.println(">>> " + dsaKey);
+//		System.out.println(">>> dsaKey : " + dsaKey);
     	
         // Split the file
     	List<String> filesToMap = inputSplitting(hostMappers, fileToTreat);
     	
-//    	System.out.println(">>> " + filesToMap);
+//    	System.out.println(">>> filesToMap : " + filesToMap);
     	
         // Launch maps process
         Map<String, ArrayList<String>> groupedDictionary = manageMapThread(hostMappers, dsaKey, fileIpAdress, filesToMap);
         
-        System.out.println(">>> " + groupedDictionary);
+//        System.out.println(">>> groupedDictionary : " + groupedDictionary);
         
-//        // Launch shuffling maps process
-//        manageShufflingMapThread(groupedDictionary, dsaKey);
+        // Launch shuffling maps process
+        manageShufflingMapThread(groupedDictionary, dsaKey);
 //        // Assembling final maps
 //        assemblingFinalMaps();
 	}
@@ -119,8 +121,12 @@ public class Master extends Slave
              // The rest of the division for the last host
              int restLineByHost = totalLine - (nbLineByHost * hostMappers.size() - 1);
             
-//             System.out.println(">>>nbLineByHost " + (nbLineByHost));
-//             System.out.println(">>>restLineByHost " + (restLineByHost));
+             //TODO
+           System.out.println(">>>nbLineByHost " + (nbLineByHost));
+           System.out.println(">>>restLineByHost " + (restLineByHost));
+//             >>> filesHostMappers : {/cal/homes/prillard/test/S3=tristan.enst.fr, /cal/homes/prillard/test/S2=titus.enst.fr, /cal/homes/prillard/test/S1=roxane.enst.fr}
+//             >>> listFiles.get(rd) : /cal/homes/prillard/test/UM_tristan.enst.fr
+//             >>> hostOwner : null
              
              // Content of the file
              List<String> content = new ArrayList<String>();
@@ -177,10 +183,8 @@ public class Master extends Slave
         // Create dictionary
     	Map<String, ArrayList<String>> groupedDictionary = null;
 		try {
-			groupedDictionary = groupedDictionary(createDictionary(hostMappers));
+			groupedDictionary = createDictionary(hostMappers);
 		} catch (IOException e) {e.printStackTrace();}
-		
-		
 		
 		//Wait while all the threads are not finished yet
 		try {
@@ -196,12 +200,12 @@ public class Master extends Slave
     
     
     /**
-     * Create a dictionary with key (word) and value (file name)
+     * Create a dictionary with key (word) and value (files names)
      * @return
      * @throws IOException
      */
-    public Map<String, String> createDictionary(List<String> hostMappers) throws IOException {
-    	Map<String, String> dictionary = new HashMap<String, String>();
+    public Map<String, ArrayList<String>> createDictionary(List<String> hostMappers) throws IOException {
+    	Map<String, ArrayList<String>> dictionary = new HashMap<String, ArrayList<String>>();
     	
 		int port = 0;
 		try {
@@ -217,10 +221,8 @@ public class Master extends Slave
     	// While we haven't received all elements dictionary from the mappers
     	for (int i = 0; i < hostMappers.size(); i++) {
     		es.execute(new ReceiveSlaveInfo(ss, dictionary));
-    		es.execute(new ShufflingMapThread(null, null, null, null));
     	}
     	
-    	ss.close();
     	es.shutdown();
     	
 		//Wait while all the threads are not finished yet
@@ -229,37 +231,9 @@ public class Master extends Slave
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.out.println("Dictionary done");
+		ss.close();
 		
         return dictionary;
-    }
-    
-    
-    /**
-     * Group each values by key
-     * @param dictionary
-     * @return grouped dictionary
-     */
-    private Map<String, ArrayList<String>> groupedDictionary(Map<String, String> dictionary) {
-    	Map<String, ArrayList<String>> groupedDictionary = new HashMap<String, ArrayList<String>>();
-    	
-    	// Group by key
-    	for (Entry<String, String> e : dictionary.entrySet()) {
-    		String key_1 = e.getKey();
-    		if (!groupedDictionary.containsKey(key_1)) {
-	        	for (Entry<String, String> f : dictionary.entrySet()) {
-	        		String key_2 = f.getKey();
-	        		if (key_2.equalsIgnoreCase(key_1)) {
-	        			// Get the list of files for this key
-	        			ArrayList<String> listFiles = groupedDictionary.get(key_2);
-	        			// Add this file for this key
-	        			listFiles.add(f.getValue());
-		        		groupedDictionary.put(key_2, listFiles);
-	        		}
-	        	}
-    		}
-    	}
-    	return groupedDictionary;
     }
     
     
@@ -281,7 +255,12 @@ public class Master extends Slave
 			int max = listFiles.size()-1;
 			int min = 0;
 		    int rd = new Random().nextInt((max - min) + 1) + min;
+
 		    // Select the first host who has already one of files to do the shuffling map
+		    
+//		    System.out.println(">>> filesHostMappers : " + filesHostMappers);
+//		    System.out.println(">>> listFiles.get(rd) : " + listFiles.get(rd));
+		    
 			String hostOwner = filesHostMappers.get(listFiles.get(rd));
 			// Parse the list of file to build a String with urls
 			String filesString = "";
@@ -294,17 +273,20 @@ public class Master extends Slave
 		    	filesString = filesString.substring(0, filesString.length()-1);
 		    }
 		    
-			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
-			hostReducers.add(hostOwner);
+		    System.out.println(">>> hostOwner : " + hostOwner);
+		    System.out.println(">>> filesString : " + filesString);
+		    
+//			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
+//			hostReducers.add(hostOwner);
 		}
 
-		es.shutdown();
-		//Wait while all the threads are not finished yet
-		try {
-			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+//		es.shutdown();
+//		//Wait while all the threads are not finished yet
+//		try {
+//			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
 		System.out.println("Parallel Shuffling maps step done");
     }
     
