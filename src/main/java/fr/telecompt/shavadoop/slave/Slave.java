@@ -1,11 +1,8 @@
 package fr.telecompt.shavadoop.slave;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -99,21 +96,18 @@ public class Slave
 		} catch (IOException e) {e.printStackTrace();}
 		
         Socket socket = new Socket(host_master, port_master);
-
-        BufferedReader plec = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        PrintWriter pred = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
+        PrintWriter pred = new PrintWriter(socket.getOutputStream());
 
         for (Entry<String, Integer> e : unsortedMaps.entrySet()) {
         	// Send dictionary element
         	pred.println(e.getKey() + Constant.SOCKET_SEPARATOR_MESSAGE + fileToShuffle);
+        	pred.flush();
         }
 
         // Send end message
-        pred.println(Constant.SOCKET_END_MESSAGE
-        		+ Constant.SOCKET_SEPARATOR_MESSAGE
-        		+ "TODO"); //TODO Get the hostname / ip adress of this computer
+        pred.println(Constant.SOCKET_END_MESSAGE);
+        pred.flush();
         
-        plec.close();
         pred.close();
         socket.close();
     }

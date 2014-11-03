@@ -1,25 +1,25 @@
 package fr.telecompt.shavadoop.master;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.LineNumberReader;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import fr.telecompt.shavadoop.master.thread.ReceiveSlaveInfo;
 import fr.telecompt.shavadoop.master.thread.ShufflingMapThread;
 import fr.telecompt.shavadoop.master.thread.SplitMappingThread;
 import fr.telecompt.shavadoop.slave.Slave;
@@ -42,27 +42,57 @@ public class Master extends Slave
 	// Host who have a reduce file to assemble
 	private List<String> hostReducers = new ArrayList<String>();
 	
+	public void initialize(){
+		//TODO
+//		try {
+//			prop.setPropValue(PropertiesReader.MASTER_HOST, InetAddress.getLocalHost().getHostName());
+//		} catch (UnknownHostException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+	}
 	
-	public Master(String fileIpAdress, String fileToTreat) {
-    	//Get our hostname mappers
-		List<String> hostMappers = getHostMappers(fileIpAdress);
-    	//Get dsa key
+	/**
+	 * Launch MapReduce process
+	 */
+	public void launchMapReduce() {
+		
+		// get values from properties file
 		String dsaFile = null;
+		String fileIpAdress = null;
+		String fileToTreat = null;
 		try {
 			dsaFile = prop.getPropValues(PropertiesReader.DSA_FILE);
+			fileIpAdress = prop.getPropValues(PropertiesReader.IP_ADRESS_FILE);
+			fileToTreat = prop.getPropValues(PropertiesReader.INPUT_FILE);
 		} catch (IOException e) {e.printStackTrace();}
+		
+    	//Get our hostname mappers
+		List<String> hostMappers = getHostMappers(fileIpAdress);
+		
+//		System.out.println(">>> " + hostMappers); 
+		
+    	//Get dsa key
 		String dsaKey = getDsaKey(dsaFile);
+		
+//		System.out.println(">>> " + dsaKey);
     	
         // Split the file
     	List<String> filesToMap = inputSplitting(hostMappers, fileToTreat);
+    	
+//    	System.out.println(">>> " + filesToMap);
+    	
         // Launch maps process
         Map<String, ArrayList<String>> groupedDictionary = manageMapThread(hostMappers, dsaKey, fileIpAdress, filesToMap);
-        // Launch shuffling maps process
-        manageShufflingMapThread(groupedDictionary, dsaKey);
-        // Assembling final maps
-        assemblingFinalMaps();
+        
+        System.out.println(">>> " + groupedDictionary);
+        
+//        // Launch shuffling maps process
+//        manageShufflingMapThread(groupedDictionary, dsaKey);
+//        // Assembling final maps
+//        assemblingFinalMaps();
 	}
-    
 	
     /**
      * Split the original file
@@ -78,23 +108,28 @@ public class Master extends Slave
              int nbLine = 0;
              int nbFile = 0;
              
-             //TODO see if we can do easier
-             int totalLine = 0;
-             while ((line = read.readLine()) != null) {
-            	 ++totalLine;
-             }
-             read.reset();
+             // get the number of line of the file
+             LineNumberReader  lnr = new LineNumberReader(new FileReader(new File(originalFile)));
+             lnr.skip(Long.MAX_VALUE);
+             int totalLine = (lnr.getLineNumber() + 1);
+             lnr.close();
              
              // Calculate the number of lines for each host
              int nbLineByHost = totalLine / (hostMappers.size() - 1);
              // The rest of the division for the last host
-             int restLineByHost = totalLine - nbLineByHost;
-            		 
+             int restLineByHost = totalLine - (nbLineByHost * hostMappers.size() - 1);
+            
+//             System.out.println(">>>nbLineByHost " + (nbLineByHost));
+//             System.out.println(">>>restLineByHost " + (restLineByHost));
+             
              // Content of the file
              List<String> content = new ArrayList<String>();
              
              while ((line = read.readLine()) != null) {
-  
+            	 // Add line by line to the content file
+            	 content.add(line);
+            	 ++nbLine;
+            	 
             	// Write the complete file by block or if it's the end of the file
             	 if (nbLine == nbLineByHost
             			 || (nbLine == restLineByHost && nbFile == hostMappers.size() - 1)) {
@@ -108,10 +143,6 @@ public class Master extends Slave
                 	 nbLine = 0;
                 	 content = new ArrayList<String>();
             	 }
-            	 
-            	 // Add line by line to the content file
-            	 content.add(line);
-            	 ++nbLine;
              }
              
              fic.close();
@@ -141,6 +172,7 @@ public class Master extends Slave
        	 	//We save the name of the file and the mapper
         	filesHostMappers.put(filesToMap.get(i), hostMappers.get(i));
     	}
+    	es.shutdown();
     	
         // Create dictionary
     	Map<String, ArrayList<String>> groupedDictionary = null;
@@ -148,7 +180,8 @@ public class Master extends Slave
 			groupedDictionary = groupedDictionary(createDictionary(hostMappers));
 		} catch (IOException e) {e.printStackTrace();}
 		
-		es.shutdown();
+		
+		
 		//Wait while all the threads are not finished yet
 		try {
 			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
@@ -176,35 +209,28 @@ public class Master extends Slave
 		} catch (IOException e) {e.printStackTrace();}
 		
     	// Create dictionnary with socket
-    	ServerSocket s = new ServerSocket(port);
-        Socket soc = s.accept();
-
-        // BufferedReader to read line by line
-        BufferedReader plec = new BufferedReader(new InputStreamReader(soc.getInputStream()));
-        // auto-flush mode to clear the buffer (flush) when we use println
-        PrintWriter pred = new PrintWriter(new BufferedWriter(new OutputStreamWriter(soc.getOutputStream())),true);
-
-        List<String> hostnameMappersDictReceived = new ArrayList<String>();
-        
-        // While we haven't received all elements dictionary from the mappers
-        while (hostnameMappersDictReceived.size() < hostMappers.size()) {
-           // read and split the message
-           String message = plec.readLine();
-           String[] elements = message.split(Constant.SOCKET_SEPARATOR_MESSAGE);
-           
-           // If the distant computer say it's done, all is sent
-           if (elements[0].equals(Constant.SOCKET_END_MESSAGE)) {
-        	   hostnameMappersDictReceived.add(elements[1]);
-           } else {
-	           // Add element dictionary in our dictionary
-	           dictionary.put(elements[0], elements[1]);
-           }
-        }
-        
-        plec.close();
-        pred.close();
-        soc.close();
+    	ServerSocket ss = new ServerSocket(port);
     	
+    	// Threat to listen slaves info
+    	ExecutorService es = Executors.newCachedThreadPool();
+
+    	// While we haven't received all elements dictionary from the mappers
+    	for (int i = 0; i < hostMappers.size(); i++) {
+    		es.execute(new ReceiveSlaveInfo(ss, dictionary));
+    		es.execute(new ShufflingMapThread(null, null, null, null));
+    	}
+    	
+    	ss.close();
+    	es.shutdown();
+    	
+		//Wait while all the threads are not finished yet
+		try {
+			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.out.println("Dictionary done");
+		
         return dictionary;
     }
     
@@ -244,12 +270,19 @@ public class Master extends Slave
     public void manageShufflingMapThread(Map<String, ArrayList<String>> dictionary, String dsaKey) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
+		
+		
 		//For each files to shuffling maps
 		for (Entry<String, ArrayList<String>> e : dictionary.entrySet()) {
 			// Get the list of files which refers to a same word
 			List<String> listFiles = e.getValue();
-			// Select the first host who has already one of files to do the shuffling map
-			String hostOwner = filesHostMappers.get(listFiles.get(0));
+
+		    // random choice of file's owner which contain the keyword
+			int max = listFiles.size()-1;
+			int min = 0;
+		    int rd = new Random().nextInt((max - min) + 1) + min;
+		    // Select the first host who has already one of files to do the shuffling map
+			String hostOwner = filesHostMappers.get(listFiles.get(rd));
 			// Parse the list of file to build a String with urls
 			String filesString = "";
 			for (String file : listFiles) {
@@ -260,6 +293,7 @@ public class Master extends Slave
 		    		&& Character.toString(filesString.charAt(filesString.length()-1)).equals(Constant.FILES_SHUFFLING_MAP_SEPARATOR)) {
 		    	filesString = filesString.substring(0, filesString.length()-1);
 		    }
+		    
 			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
 			hostReducers.add(hostOwner);
 		}
