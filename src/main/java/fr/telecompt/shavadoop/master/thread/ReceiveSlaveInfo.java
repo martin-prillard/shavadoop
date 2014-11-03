@@ -40,11 +40,14 @@ public class ReceiveSlaveInfo extends Thread {
 	           } else {
 	        	   filesNames = new ArrayList<String>();
 	           }
-        	   filesNames.add(elements[1]);
-        	   dictionary.put(elements[0], filesNames);
 	           
-//	           System.out.println(">>> dictionary receive : " + elements[0] + " " + elements[1]);
-        	   
+	           if (!filesNames.contains(elements[1])) {
+	        	   filesNames.add(elements[1]);
+	        	   dictionary.put(elements[0], filesNames);
+	        	   
+	        	   if (Constant.APP_DEBUG) System.out.println("Thread send to the master : " + elements[0] + " " + elements[1]);
+	           }
+	           
 			}
 
 	        in.close();

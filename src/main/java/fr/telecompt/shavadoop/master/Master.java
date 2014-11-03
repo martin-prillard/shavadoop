@@ -25,7 +25,6 @@ import fr.telecompt.shavadoop.master.thread.SplitMappingThread;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.LocalRepoFile;
-import fr.telecompt.shavadoop.util.Nfs;
 import fr.telecompt.shavadoop.util.PropertiesReader;
 
 /**
@@ -39,12 +38,15 @@ public class Master extends Slave
 	
 	// Map file and host
 	private Map<String, String> filesHostMappers = new HashMap<String, String>();
-	// Host who have a reduce file to assemble
-	private List<String> hostReducers = new ArrayList<String>();
 	
 	public void initialize(){
-		//TODO
+//		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
+//		
+//		if (Constant.APP_DEBUG) System.out.println("TODO display informations");
+//		
+//		TODO
 //		try {
+//			System.out.println(InetAddress.getLocalHost().getHostName());
 //			prop.setPropValue(PropertiesReader.MASTER_HOST, InetAddress.getLocalHost().getHostName());
 //		} catch (UnknownHostException e) {
 //			e.printStackTrace();
@@ -71,29 +73,33 @@ public class Master extends Slave
 		} catch (IOException e) {e.printStackTrace();}
 		
     	//Get our hostname mappers
+		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get host mappers : " + Constant.APP_DEBUG_TITLE);
 		List<String> hostMappers = getHostMappers(fileIpAdress);
-		
-//		System.out.println(">>> hostMappers : " + hostMappers); 
+		if (Constant.APP_DEBUG) System.out.println("Host mappers : " + hostMappers); 
 		
     	//Get dsa key
+		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get DSA Key : " + Constant.APP_DEBUG_TITLE);
 		String dsaKey = getDsaKey(dsaFile);
-		
-//		System.out.println(">>> dsaKey : " + dsaKey);
+		if (Constant.APP_DEBUG) System.out.println("DSA Key : " + dsaKey);
     	
         // Split the file
+		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting : " + Constant.APP_DEBUG_TITLE);
     	List<String> filesToMap = inputSplitting(hostMappers, fileToTreat);
-    	
-//    	System.out.println(">>> filesToMap : " + filesToMap);
+    	if (Constant.APP_DEBUG) System.out.println("Files after spliting : " + filesToMap);
     	
         // Launch maps process
+    	if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch map threads : " + Constant.APP_DEBUG_TITLE);
         Map<String, ArrayList<String>> groupedDictionary = manageMapThread(hostMappers, dsaKey, fileIpAdress, filesToMap);
-        
-//        System.out.println(">>> groupedDictionary : " + groupedDictionary);
+        if (Constant.APP_DEBUG) System.out.println("Grouped dictionary : " + groupedDictionary);
         
         // Launch shuffling maps process
-        manageShufflingMapThread(groupedDictionary, dsaKey);
-//        // Assembling final maps
-//        assemblingFinalMaps();
+        if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch shuffling threads : " + Constant.APP_DEBUG_TITLE);
+        Map<String, String> filesHostReducers = manageShufflingMapThread(groupedDictionary, dsaKey);
+        // Assembling final maps
+        if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Assembling final maps : " + Constant.APP_DEBUG_TITLE);
+        assemblingFinalMaps(filesHostReducers);
+        
+        if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " MapReduce process done " + Constant.APP_DEBUG_TITLE);
 	}
 	
     /**
@@ -101,7 +107,9 @@ public class Master extends Slave
      * @param originalFile
      */
     public List<String> inputSplitting(List<String> hostMappers, String originalFile) {
-    	System.out.println("Shavadoop workflow on : " + originalFile);
+    	
+    	if (Constant.APP_DEBUG) System.out.println("Shavadoop workflow on : " + originalFile);
+    	
     	List<String> filesToMap = new ArrayList<String>();
 		 try {
              FileReader fic = new FileReader(originalFile);
@@ -121,12 +129,9 @@ public class Master extends Slave
              // The rest of the division for the last host
              int restLineByHost = totalLine - (nbLineByHost * hostMappers.size() - 1);
             
-             //TODO
-           System.out.println(">>>nbLineByHost " + (nbLineByHost));
-           System.out.println(">>>restLineByHost " + (restLineByHost));
-//             >>> filesHostMappers : {/cal/homes/prillard/test/S3=tristan.enst.fr, /cal/homes/prillard/test/S2=titus.enst.fr, /cal/homes/prillard/test/S1=roxane.enst.fr}
-//             >>> listFiles.get(rd) : /cal/homes/prillard/test/UM_tristan.enst.fr
-//             >>> hostOwner : null
+             if (Constant.APP_DEBUG) System.out.println("Nb host mappers : " + (hostMappers.size()));
+             if (Constant.APP_DEBUG) System.out.println("Nb line by host mapper : " + (nbLineByHost));
+             if (Constant.APP_DEBUG) System.out.println("Nb line for the last host mapper : " + (restLineByHost));
              
              // Content of the file
              List<String> content = new ArrayList<String>();
@@ -142,7 +147,7 @@ public class Master extends Slave
                 	 //For each group of line, we write a new file
                 	 ++nbFile;
                 	 String fileToMap = Constant.F_SPLITING + nbFile;
-                	 Nfs.postFileToNFS(fileToMap, content);
+                	 LocalRepoFile.writeFile(fileToMap, content);
                 	 //We save names of theses files in a list
                 	 filesToMap.add(fileToMap);
                 	 // Reset
@@ -156,7 +161,6 @@ public class Master extends Slave
          } catch (IOException e) {
              e.printStackTrace();
          }
-		 System.out.println("Input splitting step done");
 		 
 		 return filesToMap;
     }
@@ -192,8 +196,6 @@ public class Master extends Slave
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
-		System.out.println("Parallel maps step done");
 
 		return groupedDictionary;
     }
@@ -205,6 +207,7 @@ public class Master extends Slave
      * @throws IOException
      */
     public Map<String, ArrayList<String>> createDictionary(List<String> hostMappers) throws IOException {
+    	
     	Map<String, ArrayList<String>> dictionary = new HashMap<String, ArrayList<String>>();
     	
 		int port = 0;
@@ -241,15 +244,16 @@ public class Master extends Slave
      * Launch a thread to execute shuffling map on each distant computer
      * @param dictionary
      */
-    public void manageShufflingMapThread(Map<String, ArrayList<String>> dictionary, String dsaKey) {
+    public Map<String, String> manageShufflingMapThread(Map<String, ArrayList<String>> dictionary, String dsaKey) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		
+		// Host who have a reduce file to assemble
+		Map<String, String> filesHostReducers = new HashMap<String, String>();
 		
 		//For each files to shuffling maps
 		for (Entry<String, ArrayList<String>> e : dictionary.entrySet()) {
 			// Get the list of files which refers to a same word
-			List<String> listFiles = e.getValue();
+			ArrayList<String> listFiles = e.getValue();
 
 		    // random choice of file's owner which contain the keyword
 			int max = listFiles.size()-1;
@@ -257,11 +261,8 @@ public class Master extends Slave
 		    int rd = new Random().nextInt((max - min) + 1) + min;
 
 		    // Select the first host who has already one of files to do the shuffling map
-		    
-//		    System.out.println(">>> filesHostMappers : " + filesHostMappers);
-//		    System.out.println(">>> listFiles.get(rd) : " + listFiles.get(rd));
-		    
-			String hostOwner = filesHostMappers.get(listFiles.get(rd));
+			String hostOwner = listFiles.get(rd).split(Constant.F_SEPARATOR)[1];
+			
 			// Parse the list of file to build a String with urls
 			String filesString = "";
 			for (String file : listFiles) {
@@ -273,34 +274,38 @@ public class Master extends Slave
 		    	filesString = filesString.substring(0, filesString.length()-1);
 		    }
 		    
-		    System.out.println(">>> hostOwner : " + hostOwner);
-		    System.out.println(">>> filesString : " + filesString);
+		    if (Constant.APP_DEBUG) System.out.println("Launch shuffling map thread for the key : " + e.getKey() + " on " + hostOwner + " (" + filesString + ")");
 		    
-//			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
-//			hostReducers.add(hostOwner);
+			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
+			filesHostReducers.put(e.getKey(), hostOwner);
 		}
 
-//		es.shutdown();
-//		//Wait while all the threads are not finished yet
-//		try {
-//			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
-		System.out.println("Parallel Shuffling maps step done");
+		es.shutdown();
+		//Wait while all the threads are not finished yet
+		try {
+			es.awaitTermination(WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		return filesHostReducers;
     }
     
     
     /**
      * Concat final maps together in one file result
      */
-    public void assemblingFinalMaps() {
+    public void assemblingFinalMaps(Map<String, String> filesHostReducers) {
     	// Final file to reduce
     	String fileFinalResult = Constant.F_FINAL_RESULT;
     	// Get the list of file
-    	String[] listFiles = null;
-    	for (String host : hostReducers) {
-    		//TODO search files on each distant computer with
+    	List<String> listFiles = new ArrayList<String>();
+    	for (Entry<String, String> e : filesHostReducers.entrySet()) {
+    		listFiles.add(Constant.F_REDUCING 
+    				+ Constant.F_SEPARATOR 
+    				+ e.getKey() // keyword
+    				+ Constant.F_SEPARATOR 
+    				+ e.getValue()); // hostname
     	}
 
     	// Concat data of each files in one
@@ -308,8 +313,8 @@ public class Master extends Slave
              Map<String, Integer> finalResult = new HashMap<String, Integer>();
              
              // For each files
-			 for (int i = 0; i < listFiles.length; i++) {
-	             FileReader fic = new FileReader(listFiles[i]);
+			 for (int i = 0; i < listFiles.size(); i++) {
+	             FileReader fic = new FileReader(listFiles.get(i));
 	             BufferedReader read = new BufferedReader(fic);
 	             String line = null;
 	
@@ -318,6 +323,8 @@ public class Master extends Slave
 		            String words[] = line.split(Constant.FILE_SEPARATOR);
 		            // Add each line to our hashmap
 		            finalResult.put(words[0], Integer.parseInt(words[1]));
+		            
+		            if (Constant.APP_DEBUG) System.out.println(words[0] + Constant.FILE_SEPARATOR + Integer.parseInt(words[1]));
 	             } 
 	        	 
 	             fic.close();

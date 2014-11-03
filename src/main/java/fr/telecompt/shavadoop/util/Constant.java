@@ -6,6 +6,8 @@ public class Constant {
 	public final static String APP_EXTENSION = ".jar";
 	public final static String APP_PATH_REPO = "/cal/homes/prillard/test/";
 	public final static String APP_FULL_PATH = APP_PATH_REPO + "shavadoop" + "_" + APP_VERSION + APP_EXTENSION;
+	public final static boolean APP_DEBUG = true;
+	public final static String APP_DEBUG_TITLE = "---------------------------------------------------------";
 	
 	public final static String SEPARATOR = " ";
 	public final static String FILE_SEPARATOR = ", ";
@@ -17,5 +19,6 @@ public class Constant {
 	public final static String F_MAPPING = APP_PATH_REPO + "UM";
 	public final static String F_SHUFFLING = APP_PATH_REPO + "SM";
 	public final static String F_REDUCING = APP_PATH_REPO + "RM";
-	public final static String F_FINAL_RESULT = APP_PATH_REPO + "F";
+	public final static String F_FINAL_RESULT = APP_PATH_REPO + "output";
+	public final static String F_SEPARATOR = "_";
 }

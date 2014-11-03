@@ -10,8 +10,8 @@ public class ShufflingMapThread extends ShellThread {
 
 	private String key;
 	
-	public ShufflingMapThread(String _dsaKey, String _hostname, String _filesToShufflingMap, String _key) {
-		super(_dsaKey, _hostname, _filesToShufflingMap);
+	public ShufflingMapThread(String _dsaKey, String _hostname, String _fileToTreat, String _key) {
+		super(_dsaKey, _hostname, _fileToTreat);
 		key = _key;
 	}
 	
@@ -22,6 +22,17 @@ public class ShufflingMapThread extends ShellThread {
 			//Launch map process
 			String pathJar = Constant.APP_FULL_PATH;
 			String method = Slave.SHUFFLING_MAP_FUNCTION;
+			
+			if (Constant.APP_DEBUG) System.out.println("Cmd : " 
+					+ "java -jar " 
+					+ pathJar 
+					+ " " 
+					+ method 
+					+ " " 
+					+ fileToTreat
+					+ " "
+					+ key);
+			
 			new Shell.Plain(shell).exec("java -jar " 
 				+ pathJar 
 				+ " " 
@@ -30,6 +41,7 @@ public class ShufflingMapThread extends ShellThread {
 				+ fileToTreat
 				+ " "
 				+ key);
+			
 		} catch (Exception e) {
 			System.out.println("Fail to connect to " + hostname);
 		}

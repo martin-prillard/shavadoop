@@ -19,7 +19,18 @@ public class SplitMappingThread extends ShellThread {
 			//Launch map process
 			String pathJar = Constant.APP_FULL_PATH;
 			String method = Slave.SPLIT_MAPPING_FUNCTION;
-			String stdout = new Shell.Plain(shell).exec("java -jar " 
+			
+			if (Constant.APP_DEBUG) System.out.println("Cmd : " 
+					+ "java -jar "
+					+ pathJar 
+					+ " " 
+					+ method 
+					+ " " 
+					+ fileToTreat
+					+ " "
+					+ null);
+			
+			new Shell.Plain(shell).exec("java -jar " 
 			+ pathJar 
 			+ " " 
 			+ method 

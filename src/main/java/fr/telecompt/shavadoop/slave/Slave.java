@@ -7,12 +7,14 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.LocalRepoFile;
+import fr.telecompt.shavadoop.util.Pair;
 import fr.telecompt.shavadoop.util.PropertiesReader;
 
 /**
@@ -40,7 +42,7 @@ public class Slave
     		//Lanch shuffling map method
     		String fileSortedMaps = shufflingMaps(key, fileToTreat);
     		//Launch reduce method	
-    		mappingSortedMaps(fileSortedMaps);
+    		mappingSortedMaps(key, fileSortedMaps);
     		break;
     	default:
     		System.out.println("Function name unknown");
@@ -59,7 +61,7 @@ public class Slave
              BufferedReader read = new BufferedReader(fic);
              String line = null;
              
-             Map<String, Integer> unsortedMaps = null;
+             List<Pair> unsortedMaps = null;
             		 
              while ((line = read.readLine()) != null) {
             	 unsortedMaps = wordCount(unsortedMaps, line);
@@ -69,8 +71,8 @@ public class Slave
              read.close();   
     		 
              // Write UM File
-        	 String fileToShuffle = Constant.F_MAPPING + "_" + InetAddress.getLocalHost().getHostName();
-        	 LocalRepoFile.writeFile(fileToShuffle, unsortedMaps);
+        	 String fileToShuffle = Constant.F_MAPPING + Constant.F_SEPARATOR + InetAddress.getLocalHost().getHostName();
+        	 LocalRepoFile.writeFileFromPair(fileToShuffle, unsortedMaps);
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
         	 sendDictionaryElement(unsortedMaps, fileToShuffle);
         	 
@@ -79,6 +81,26 @@ public class Slave
          }
     }
     
+    /**
+     * Count the occurence of each word in the sentence
+     * @param line
+     * @return
+     */
+    public List<Pair> wordCount(List<Pair> mapWc, String line) {
+    	if (mapWc == null) {
+    		mapWc = new ArrayList<Pair>();
+    	}
+    	//We split the line word by word
+    	String words[] = line.split(Constant.SEPARATOR);
+    	
+    	for (int i = 0; i < words.length; i++) {
+    		String word = words[i];
+    		//Increment counter value for this word
+    		mapWc.add(new Pair(word, 1));
+    	}
+    	
+    	return mapWc;
+    }
     
     /**
      * Send key (word) - value (name of the file content), to the master
@@ -87,7 +109,7 @@ public class Slave
      * @throws IOException 
      * @throws UnknownHostException 
      */
-    private void sendDictionaryElement(Map<String, Integer> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
+    private void sendDictionaryElement(List<Pair> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
     	//Get host master and port
 		int port_master = 0;
 		String host_master = null;
@@ -99,9 +121,9 @@ public class Slave
         Socket socket = new Socket(host_master, port_master);
         PrintWriter pred = new PrintWriter(socket.getOutputStream());
 
-        for (Entry<String, Integer> e : unsortedMaps.entrySet()) {
+        for (Pair p : unsortedMaps) {
         	// Send dictionary element
-        	pred.println(e.getKey() + Constant.SOCKET_SEPARATOR_MESSAGE + fileToShuffle);
+        	pred.println(p.getKey() + Constant.SOCKET_SEPARATOR_MESSAGE + fileToShuffle);
         	pred.flush();
         }
 
@@ -113,30 +135,56 @@ public class Slave
         socket.close();
     }
     
-    
+
     /**
-     * Count the occurence of each word in the sentence
-     * @param line
+     * Group and sort maps results by key
+     * @param key
+     * @param filesToTreat
      * @return
      */
-    public Map<String, Integer> wordCount(Map<String, Integer> mapWc, String line) {
-    	if (mapWc == null) {
-    		mapWc = new HashMap<String, Integer>();
-    	}
-    	//We split the line word by word
-    	String words[] = line.split(Constant.SEPARATOR);
+    public String shufflingMaps(String key, String filesToTreat) {
+    	// Final file to reduce
+    	String fileToReduce = null;
+    	// Get the list of file
+    	String[] listFiles = filesToTreat.split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
     	
-    	for (int i = 0; i < words.length; i++) {
-    		String word = words[i];
-    		//Increment counter value for this word
-    		if (mapWc.containsKey(word)) {
-    			mapWc.put(word, mapWc.get(word) + 1);
-    		} else {
-    			mapWc.put(word, 1);
-    		}
-    	}
+    	// Concat data of each files in one
+		 try {
+             List<Pair> sortedMaps = new ArrayList<Pair>();
+             
+             // For each files
+			 for (int i = 0; i < listFiles.length; i++) {
+				 
+	             FileReader fic = new FileReader(listFiles[i]);
+	             BufferedReader read = new BufferedReader(fic);
+	             String line = null;
+	
+	             // For each lines of the file
+	             while ((line = read.readLine()) != null) {
+		            String words[] = line.split(Constant.FILE_SEPARATOR);
+		            // Search line refers to this key
+		            if (words[0].equals(key)) {
+			            // Add each line matched with the key to our hashmap
+		            	sortedMaps.add(new Pair(words[0], Integer.parseInt(words[1])));
+		            }
+	             } 
+	        	 
+	             fic.close();
+	             read.close();   
+			 }
+			 
+        	 fileToReduce = Constant.F_SHUFFLING 
+        			 + Constant.F_SEPARATOR 
+        			 + key
+        			 + Constant.F_SEPARATOR 
+        			 + InetAddress.getLocalHost().getHostName();
+        	 LocalRepoFile.writeFileFromPair(fileToReduce, sortedMaps);
+         	
+         } catch (IOException e) {
+             e.printStackTrace();
+         }
+    	return fileToReduce;
     	
-    	return mapWc;
     }
     
     
@@ -144,7 +192,7 @@ public class Slave
      * Reduce method
      * @param fileToReduce
      */
-    public void mappingSortedMaps(String fileToReduce) {
+    public void mappingSortedMaps(String key, String fileToReduce) {
 		 try {
              FileReader fic = new FileReader(fileToReduce);
              BufferedReader read = new BufferedReader(fic);
@@ -161,8 +209,12 @@ public class Slave
          			finalMaps.put(words[0], Integer.parseInt(words[1]));
          		}
              }
-             
-        	 String fileToAssemble = Constant.F_REDUCING;
+            
+        	 String fileToAssemble = Constant.F_REDUCING 
+        			 + Constant.F_SEPARATOR
+        			 + key
+        			 + Constant.F_SEPARATOR 
+        			 + InetAddress.getLocalHost().getHostName() ;
         	 LocalRepoFile.writeFile(fileToAssemble, finalMaps);
         	 
              fic.close();
@@ -171,53 +223,5 @@ public class Slave
          } catch (IOException e) {
              e.printStackTrace();
          }
-    }
-    
-
-    /**
-     * Group and sort maps results by key
-     * @param key
-     * @param filesToTreat
-     * @return
-     */
-    public String shufflingMaps(String key, String filesToTreat) {
-    	// Final file to reduce
-    	String fileToReduce = null;
-    	// Get the list of file
-    	String[] listFiles = filesToTreat.split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
-    	//TODO search files from different computer
-    	
-    	// Concat data of each files in one
-		 try {
-             Map<String, Integer> sortedMaps = new HashMap<String, Integer>();
-             
-             // For each files
-			 for (int i = 0; i < listFiles.length; i++) {
-	             FileReader fic = new FileReader(listFiles[i]);
-	             BufferedReader read = new BufferedReader(fic);
-	             String line = null;
-	
-	             // For each lines of the file
-	             while ((line = read.readLine()) != null) {
-		            String words[] = line.split(Constant.FILE_SEPARATOR);
-		            // Search line refers to this key
-		            if (words[0].equalsIgnoreCase(key)) {
-			            // Add each line matched with the key to our hashmap
-		            	sortedMaps.put(words[0], Integer.parseInt(words[1]));
-		            }
-	             } 
-	        	 
-	             fic.close();
-	             read.close();   
-			 }
-			 
-        	 String fileToAssemble = Constant.F_SHUFFLING;
-        	 LocalRepoFile.writeFile(fileToAssemble, sortedMaps);
-        	 
-         } catch (IOException e) {
-             e.printStackTrace();
-         }
-    	return fileToReduce;
-    	
     }
 }
