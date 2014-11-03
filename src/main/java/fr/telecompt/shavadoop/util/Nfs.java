@@ -1,5 +1,6 @@
 package fr.telecompt.shavadoop.util;
 
+import java.util.List;
 import java.util.Map;
 
 public class Nfs {
@@ -8,7 +9,7 @@ public class Nfs {
 		// TODO
 	}
 	
-	public static void postFileToNFS(String nameFile, String content) {
+	public static void postFileToNFS(String nameFile, List<String> content) {
 		//TODO
 	}
 	

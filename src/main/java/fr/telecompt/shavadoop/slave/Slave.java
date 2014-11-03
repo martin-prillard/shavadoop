@@ -1,29 +1,40 @@
 package fr.telecompt.shavadoop.slave;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.LocalRepoFile;
+import fr.telecompt.shavadoop.util.PropertiesReader;
 
 /**
- * Hello world!
+ * Slave object
  *
  */
 public class Slave 
 {
 	
-	private final String MAP_FUNCTION = "map";
-	private final String SHUFFLING_MAP_FUNCTION = "shuffling_map_function";
+	public final static String SPLIT_MAPPING_FUNCTION = "split_mapping_function";
+	public final static String SHUFFLING_MAP_FUNCTION = "shuffling_map_function";
+	protected PropertiesReader prop = new PropertiesReader();
+	
 	
 	public Slave(){}
 	
+	
     public Slave(String functionName, String fileToTreat, String key) {
     	switch (functionName){
-    	case MAP_FUNCTION:
+    	case SPLIT_MAPPING_FUNCTION:
     		//Launch map method
     		splitMapping(fileToTreat);
     		break;
@@ -39,6 +50,7 @@ public class Slave
     	}
     }
     
+    
     /**	
      * Map method
      * @param fileToMap
@@ -48,28 +60,64 @@ public class Slave
              FileReader fic = new FileReader(fileToMap);
              BufferedReader read = new BufferedReader(fic);
              String line = null;
-             int nbLine = 1;
              
              Map<String, Integer> unsortedMaps = null;
             		 
              while ((line = read.readLine()) != null) {
             	 unsortedMaps = wordCount(unsortedMaps, line);
-            	 ++nbLine;
              }
              
              fic.close();
              read.close();   
     		 
              // Write UM File
-        	 String fileToShuffle = "UM" + nbLine;
+        	 String fileToShuffle = Constant.F_MAPPING;
         	 LocalRepoFile.writeFile(fileToShuffle, unsortedMaps);
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
-        	 //TODO
+        	 sendDictionaryElement(unsortedMaps, fileToShuffle);
         	 
          } catch (IOException e) {
              e.printStackTrace();
          }
     }
+    
+    
+    /**
+     * Send key (word) - value (name of the file content), to the master
+     * @param unsortedMaps
+     * @param fileToShuffle
+     * @throws IOException 
+     * @throws UnknownHostException 
+     */
+    private void sendDictionaryElement(Map<String, Integer> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
+    	//Get host master and port
+		int port_master = 0;
+		String host_master = null;
+		try {
+			port_master = Integer.parseInt(prop.getPropValues(PropertiesReader.MASTER_PORT));
+			host_master = prop.getPropValues(PropertiesReader.MASTER_HOST);
+		} catch (IOException e) {e.printStackTrace();}
+		
+        Socket socket = new Socket(host_master, port_master);
+
+        BufferedReader plec = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        PrintWriter pred = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),true);
+
+        for (Entry<String, Integer> e : unsortedMaps.entrySet()) {
+        	// Send dictionary element
+        	pred.println(e.getKey() + Constant.SOCKET_SEPARATOR_MESSAGE + fileToShuffle);
+        }
+
+        // Send end message
+        pred.println(Constant.SOCKET_END_MESSAGE
+        		+ Constant.SOCKET_SEPARATOR_MESSAGE
+        		+ "TODO"); //TODO Get the hostname / ip adress of this computer
+        
+        plec.close();
+        pred.close();
+        socket.close();
+    }
+    
     
     /**
      * Count the occurence of each word in the sentence
@@ -97,9 +145,6 @@ public class Slave
     }
     
     
-    public void combiner() {} //TODO
-
-    
     /**
      * Reduce method
      * @param fileToReduce
@@ -122,7 +167,7 @@ public class Slave
          		}
              }
              
-        	 String fileToAssemble = "RM";
+        	 String fileToAssemble = Constant.F_REDUCING;
         	 LocalRepoFile.writeFile(fileToAssemble, finalMaps);
         	 
              fic.close();
@@ -133,13 +178,20 @@ public class Slave
          }
     }
     
-    //Group and sort maps results by key
+
+    /**
+     * Group and sort maps results by key
+     * @param key
+     * @param filesToTreat
+     * @return
+     */
     public String shufflingMaps(String key, String filesToTreat) {
     	// Final file to reduce
     	String fileToReduce = null;
     	// Get the list of file
     	String[] listFiles = filesToTreat.split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
-    	//TODO search files from NFS
+    	//TODO search files from different computer
+    	
     	// Concat data of each files in one
 		 try {
              Map<String, Integer> sortedMaps = new HashMap<String, Integer>();
@@ -164,7 +216,7 @@ public class Slave
 	             read.close();   
 			 }
 			 
-        	 String fileToAssemble = "SM";
+        	 String fileToAssemble = Constant.F_SHUFFLING;
         	 LocalRepoFile.writeFile(fileToAssemble, sortedMaps);
         	 
          } catch (IOException e) {

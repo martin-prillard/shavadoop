@@ -5,13 +5,10 @@ import com.jcabi.ssh.Shell;
 
 import fr.telecompt.shavadoop.slave.Slave;
 
-public class ShufflingMapThread extends ShellThread {
-
-	private String key;
+public class SplitMappingThread extends ShellThread {
 	
-	public ShufflingMapThread(String _dsaKey, String _hostname, String _filesToShufflingMap, String _key) {
-		super(_dsaKey, _hostname, _filesToShufflingMap);
-		key = _key;
+	public SplitMappingThread(String _dsaKey, String _hostname, String _fileToMap) {
+		super(_dsaKey, _hostname, _fileToMap);
 	}
 	
 	public void run() {
@@ -20,18 +17,15 @@ public class ShufflingMapThread extends ShellThread {
 			shell = new SSH(hostname, shellPort, usernameMaster, dsaKey);
 			//Launch map process
 			String pathJar = "shavadoop.jar"; //TODO change pathjar
-			String method = Slave.SHUFFLING_MAP_FUNCTION;
+			String method = Slave.SPLIT_MAPPING_FUNCTION;
 			new Shell.Plain(shell).exec("java -jar " 
-				+ pathJar 
-				+ " " 
-				+ method 
-				+ " " 
-				+ fileToTreat
-				+ " "
-				+ key);
+			+ pathJar 
+			+ " " 
+			+ method 
+			+ " " 
+			+ fileToTreat);
 		} catch (Exception e) {
 			System.out.println("Fail to connect to " + hostname);
 		}
 	}
-	
 }
