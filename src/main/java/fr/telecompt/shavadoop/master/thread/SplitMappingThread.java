@@ -10,8 +10,8 @@ import fr.telecompt.shavadoop.util.Constant;
 
 public class SplitMappingThread extends ShellThread {
 	
-	public SplitMappingThread(String _usernameMaster, String _dsaKey, String _hostname, String _fileToTreat, String _hostMapper) {
-		super(_usernameMaster, _dsaKey, _hostname, _fileToTreat, _hostMapper);
+	public SplitMappingThread(String _dsaKey, String _hostname, String _fileToTreat, String _hostMapper) {
+		super(_dsaKey, _hostname, _fileToTreat, _hostMapper);
 	}
 	
 	public void run() {
@@ -29,10 +29,10 @@ public class SplitMappingThread extends ShellThread {
 				+ fileToTreat
 				+ Constant.SEPARATOR
 				+ null;
-		
+
 		try {
 			//Connect to the distant computer
-			shell = new SSH(hostname, shellPort, usernameMaster, dsaKey);
+			shell = new SSH(hostname, shellPort, Constant.USERNAME_MASTER, dsaKey);
 			
 			//Launch map process
 			new Shell.Plain(shell).exec(cmd);
@@ -40,7 +40,7 @@ public class SplitMappingThread extends ShellThread {
 			
 		} catch (Exception e) {
 			// the master is the worker
-			if (nbWorker == 0) {
+			if (hostname.equalsIgnoreCase(Constant.USERNAME_MASTER)) {
 				Process proc;
 				try {
 					// Run a java app in a separate system process

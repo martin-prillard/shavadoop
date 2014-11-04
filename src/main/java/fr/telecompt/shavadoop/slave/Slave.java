@@ -15,7 +15,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import fr.telecompt.shavadoop.master.Master;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.LocalRepoFile;
 import fr.telecompt.shavadoop.util.Pair;
@@ -117,10 +116,7 @@ public class Slave
      */
     private void sendDictionaryElement(String hostMaster, List<Pair> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
     	//Get host master and port
-		int port_master = 0;
-		try {
-			port_master = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_MASTER));
-		} catch (IOException e) {e.printStackTrace();}
+		int port_master = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_MASTER));
 		
         Socket socket = new Socket(hostMaster, port_master);
         PrintWriter pred = new PrintWriter(socket.getOutputStream());

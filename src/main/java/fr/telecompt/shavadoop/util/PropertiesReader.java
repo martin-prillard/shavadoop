@@ -14,16 +14,16 @@ public class PropertiesReader {
 	public static final String PORT_MASTER = "port_master";
 	public static final String PORT_SHELL = "port_shell";
 	public static final String NB_WORKER = "nb_worker";
+	public final static String APP_PATH_REPO = "app_path_repo";
 	
-	public String getPropValues(String key) throws IOException {
+	public String getPropValues(String key) {
 		 
 		Properties prop = new Properties();
 		
 		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(URL_CONFIG_FILE);
-		prop.load(inputStream);
-		if (inputStream == null) {
-			throw new FileNotFoundException("property file '" + URL_CONFIG_FILE + "' not found in the classpath");
-		}
+		try {
+			prop.load(inputStream);
+		} catch (IOException e) {e.printStackTrace();}
 
 		return prop.getProperty(key);
 	}
