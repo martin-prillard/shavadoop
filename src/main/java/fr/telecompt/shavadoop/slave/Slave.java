@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import fr.telecompt.shavadoop.master.Master;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.LocalRepoFile;
 import fr.telecompt.shavadoop.util.Pair;
@@ -23,6 +27,7 @@ import fr.telecompt.shavadoop.util.PropertiesReader;
  */
 public class Slave 
 {
+	private final Logger logger = LoggerFactory.getLogger(Slave.class);
 	
 	public final static String SPLIT_MAPPING_FUNCTION = "split_mapping_function";
 	public final static String SHUFFLING_MAP_FUNCTION = "shuffling_map_function";
@@ -32,21 +37,21 @@ public class Slave
 	public Slave(){}
 	
 	
-    public Slave(String functionName, String fileToTreat, String key) {
+    public Slave(String hostMaster, String functionName, String fileToTreat, String key) {
     	switch (functionName){
-    	case SPLIT_MAPPING_FUNCTION:
-    		//Launch map method
-    		splitMapping(fileToTreat);
-    		break;
-    	case SHUFFLING_MAP_FUNCTION:
-    		//Lanch shuffling map method
-    		String fileSortedMaps = shufflingMaps(key, fileToTreat);
-    		//Launch reduce method	
-    		mappingSortedMaps(key, fileSortedMaps);
-    		break;
-    	default:
-    		System.out.println("Function name unknown");
-    		break;
+	    	case SPLIT_MAPPING_FUNCTION:
+	    		//Launch map method
+	    		splitMapping(hostMaster, fileToTreat);
+	    		break;
+	    	case SHUFFLING_MAP_FUNCTION:
+	    		//Lanch shuffling map method
+	    		String fileSortedMaps = shufflingMaps(key, fileToTreat);
+	    		//Launch reduce method	
+	    		mappingSortedMaps(key, fileSortedMaps);
+	    		break;
+	    	default:
+	    		System.out.println("Function name unknown");
+	    		break;
     	}
     }
     
@@ -55,7 +60,7 @@ public class Slave
      * Map method
      * @param fileToMap
      */
-    public void splitMapping(String fileToMap) {
+    public void splitMapping(String hostMaster, String fileToMap) {
 		 try {
              FileReader fic = new FileReader(fileToMap);
              BufferedReader read = new BufferedReader(fic);
@@ -73,8 +78,9 @@ public class Slave
              // Write UM File
         	 String fileToShuffle = Constant.F_MAPPING + Constant.F_SEPARATOR + InetAddress.getLocalHost().getHostName();
         	 LocalRepoFile.writeFileFromPair(fileToShuffle, unsortedMaps);
+        	 
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
-        	 sendDictionaryElement(unsortedMaps, fileToShuffle);
+        	 sendDictionaryElement(hostMaster, unsortedMaps, fileToShuffle);
         	 
          } catch (IOException e) {
              e.printStackTrace();
@@ -109,16 +115,14 @@ public class Slave
      * @throws IOException 
      * @throws UnknownHostException 
      */
-    private void sendDictionaryElement(List<Pair> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
+    private void sendDictionaryElement(String hostMaster, List<Pair> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
     	//Get host master and port
 		int port_master = 0;
-		String host_master = null;
 		try {
 			port_master = Integer.parseInt(prop.getPropValues(PropertiesReader.MASTER_PORT));
-			host_master = prop.getPropValues(PropertiesReader.MASTER_HOST);
 		} catch (IOException e) {e.printStackTrace();}
 		
-        Socket socket = new Socket(host_master, port_master);
+        Socket socket = new Socket(hostMaster, port_master);
         PrintWriter pred = new PrintWriter(socket.getOutputStream());
 
         for (Pair p : unsortedMaps) {

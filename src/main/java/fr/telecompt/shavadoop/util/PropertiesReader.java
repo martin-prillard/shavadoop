@@ -11,10 +11,10 @@ public class PropertiesReader {
 	public static final String DSA_FILE = "dsa_file";
 	public static final String IP_ADRESS_FILE = "ip_adress_file";
 	public static final String MASTER_PORT = "master_port";
-	public static final String MASTER_HOST = "master_host";
 	public static final String USERNAME_MASTER = "username_master";
 	public static final String SHELL_PORT = "shell_port";
 	public static final String INPUT_FILE = "input_file";
+	public static final String NB_WORKER = "nb_worker";
 	
 	public String getPropValues(String key) throws IOException {
 		 
