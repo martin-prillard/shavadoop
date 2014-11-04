@@ -58,23 +58,29 @@ public class Master extends Slave
 	private Map<String, String> filesHostMappers = new HashMap<String, String>();
 	
 	public void initialize(){
+		
+		// create directory if not exist
+		LocalRepoFile.createDirectory(new File(Constant.APP_PATH_REPO_RES));
+		LocalRepoFile.createDirectory(new File(Constant.APP_PATH_REPO_LOG));
+
 		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
 		
+		usernameMaster = System.getProperty("user.name");
+
 		// get values from properties file
 		try {
-			dsaFile = prop.getPropValues(PropertiesReader.DSA_FILE);
-			fileIpAdress = prop.getPropValues(PropertiesReader.IP_ADRESS_FILE);
-			fileToTreat = prop.getPropValues(PropertiesReader.INPUT_FILE);
+			dsaFile = prop.getPropValues(PropertiesReader.FILE_DSA);
+			fileIpAdress = prop.getPropValues(PropertiesReader.FILE_IP_ADRESS);
+			fileToTreat = prop.getPropValues(PropertiesReader.FILE_INPUT);
 			nbWorker = Integer.parseInt(prop.getPropValues(PropertiesReader.NB_WORKER));
-			usernameMaster = prop.getPropValues(PropertiesReader.USERNAME_MASTER);
-			shellPort = Integer.parseInt(prop.getPropValues(PropertiesReader.SHELL_PORT));
+			shellPort = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_SHELL));
 		} catch (IOException e) {e.printStackTrace();}
 		
-		//Get the list of hosts of the network
+		// get the list of hosts of the network
 		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get hosts alive : " + Constant.APP_DEBUG_TITLE);
 		hostsNetwork = getHostFromFile();
 		
-    	//Get dsa key
+    	// get dsa key
 		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get DSA Key : " + Constant.APP_DEBUG_TITLE);
 		dsaKey = getDsaKey(dsaFile);
 		if (Constant.APP_DEBUG) System.out.println("DSA Key : " + dsaKey);
@@ -83,7 +89,9 @@ public class Master extends Slave
 			hostMaster = InetAddress.getLocalHost().getHostName().toString();
 		} catch (Exception e) {e.printStackTrace();}
 		
-		//TODO clean repo app
+		// clean directory
+		LocalRepoFile.cleanDirectory(new File(Constant.APP_PATH_REPO_RES)); 
+		LocalRepoFile.cleanDirectory(new File(Constant.APP_PATH_REPO_LOG));
 	}
 	
 	/**
@@ -109,6 +117,12 @@ public class Master extends Slave
 			}
 		}
 		
+		// if zero worker
+		if (hostAlive.size() == 0) {
+			// the master is the worker
+			hostAlive.add(usernameMaster);
+		}
+		
 		return hostAlive;
 	}
 	
@@ -128,7 +142,7 @@ public class Master extends Slave
 			Shell shell = new SSH(host, shellPort, usernameMaster, dsaKey);
 			new Shell.Plain(shell).exec("echo " + host); 
 			alive = true;
-		} catch (Exception e) {} //Fail to connect
+		} catch (Exception e) {} //fail to connect
 		return alive;
 	}
 	
@@ -181,10 +195,16 @@ public class Master extends Slave
              int totalLine = (lnr.getLineNumber() + 1);
              lnr.close();
              
-             // Calculate the number of lines for each host
-             int nbLineByHost = totalLine / (nbWorker - 1);
-             // The rest of the division for the last host
-             int restLineByHost = totalLine - (nbLineByHost * nbWorker - 1);
+             int nbLineByHost = totalLine;
+             int restLineByHost = 0;
+
+	         // if it's a cluster
+             if (nbWorker > 1) {
+	             // Calculate the number of lines for each host
+	             nbLineByHost = totalLine / (nbWorker - 1);
+	             // The rest of the division for the last host
+	             restLineByHost = totalLine - (nbLineByHost * nbWorker - 1);
+             }
             
              if (Constant.APP_DEBUG) System.out.println("Nb host mappers : " + (nbWorker));
              if (Constant.APP_DEBUG) System.out.println("Nb line by host mapper : " + (nbLineByHost));
@@ -235,7 +255,7 @@ public class Master extends Slave
 		//For each files to map
     	for (int i = 0; i < filesToMap.size(); i++) {
     		//We launch a map Thread to execute the map process on the distant computer
-			es.execute(new SplitMappingThread(dsaKey, hostMappers.get(i), filesToMap.get(i), hostMaster));
+			es.execute(new SplitMappingThread(usernameMaster, dsaKey, hostMappers.get(i), filesToMap.get(i), hostMaster));
        	 	//We save the name of the file and the mapper
         	filesHostMappers.put(filesToMap.get(i), hostMappers.get(i));
     	}
@@ -269,7 +289,7 @@ public class Master extends Slave
     	
 		int port = 0;
 		try {
-			port = Integer.parseInt(prop.getPropValues(PropertiesReader.MASTER_PORT));
+			port = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_MASTER));
 		} catch (IOException e) {e.printStackTrace();}
 		
     	// Create dictionnary with socket
@@ -319,10 +339,14 @@ public class Master extends Slave
 
 		    // Select the first host who has already one of files to do the shuffling map
 			String hostOwner = listFiles.get(rd).split(Constant.F_SEPARATOR)[1];
-			// if this host is not alive
-			if (isAlive(hostOwner)) {
-				// we select an other
-				hostOwner = getHostAlive(1).get(0);
+
+			// the master is not the worker
+			if (nbWorker > 0) {
+				// if this host is not alive
+				if (isAlive(hostOwner)) {
+					// we select an other
+					hostOwner = getHostAlive(1).get(0);
+				}
 			}
 			
 			// Parse the list of file to build a String with urls
@@ -338,7 +362,7 @@ public class Master extends Slave
 		    
 		    if (Constant.APP_DEBUG) System.out.println("Launch shuffling map thread for the key : " + e.getKey() + " on " + hostOwner + " (" + filesString + ")");
 		    
-			es.execute(new ShufflingMapThread(dsaKey, hostOwner, filesString, e.getKey()));
+			es.execute(new ShufflingMapThread(usernameMaster, dsaKey, hostOwner, filesString, e.getKey(), hostMaster));
 			filesHostReducers.put(e.getKey(), hostOwner);
 		}
 

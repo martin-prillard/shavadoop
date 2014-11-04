@@ -1,11 +1,15 @@
 package fr.telecompt.shavadoop.util;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.commons.io.FileUtils;
 
 public class LocalRepoFile {
 	
@@ -69,4 +73,18 @@ public class LocalRepoFile {
 		}
 	}
 	
+	public static void createDirectory(File file) {
+	    // if the directory does not exist, create it
+	    if (!file.exists()) {
+	     try{
+	    	 file.mkdir();
+	       } catch(Exception e){e.printStackTrace();}  
+	    }
+	}
+	
+	public static void cleanDirectory(File file) {
+		try {
+			FileUtils.cleanDirectory(file);
+		} catch (IOException e) {e.printStackTrace();}
+	}
 }

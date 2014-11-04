@@ -119,7 +119,7 @@ public class Slave
     	//Get host master and port
 		int port_master = 0;
 		try {
-			port_master = Integer.parseInt(prop.getPropValues(PropertiesReader.MASTER_PORT));
+			port_master = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_MASTER));
 		} catch (IOException e) {e.printStackTrace();}
 		
         Socket socket = new Socket(hostMaster, port_master);

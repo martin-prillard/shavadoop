@@ -5,8 +5,8 @@ import com.jcabi.ssh.Shell;
 
 public class PingThread extends ShellThread {
 	
-	public PingThread(String _dsaKey, String _hostname, String _fileToTreat) {
-		super(_dsaKey, _hostname, _fileToTreat);
+	public PingThread(String _username, String _dsaKey, String _hostname, String _fileToTreat, String _hostnameMaster) {
+		super(_username, _dsaKey, _hostname, _fileToTreat, _hostnameMaster);
 	}
 
 	public void run() {

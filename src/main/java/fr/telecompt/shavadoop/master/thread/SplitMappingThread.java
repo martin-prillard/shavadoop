@@ -1,5 +1,7 @@
 package fr.telecompt.shavadoop.master.thread;
 
+import java.io.IOException;
+
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
@@ -8,47 +10,47 @@ import fr.telecompt.shavadoop.util.Constant;
 
 public class SplitMappingThread extends ShellThread {
 	
-	private String hostMapper;
-	
-	public SplitMappingThread(String _dsaKey, String _hostname, String _fileToTreat, String _hostMapper) {
-		super(_dsaKey, _hostname, _fileToTreat);
-		hostMapper = _hostMapper;
+	public SplitMappingThread(String _usernameMaster, String _dsaKey, String _hostname, String _fileToTreat, String _hostMapper) {
+		super(_usernameMaster, _dsaKey, _hostname, _fileToTreat, _hostMapper);
 	}
 	
 	public void run() {
+		
+		String pathJar = Constant.APP_PATH_JAR;
+		String method = Slave.SPLIT_MAPPING_FUNCTION;
+		String cmd = "java -jar" 
+				+ Constant.SEPARATOR
+				+ pathJar
+				+ Constant.SEPARATOR
+				+ hostMapper
+				+ Constant.SEPARATOR 
+				+ method 
+				+ Constant.SEPARATOR 
+				+ fileToTreat
+				+ Constant.SEPARATOR
+				+ null;
+		
 		try {
 			//Connect to the distant computer
 			shell = new SSH(hostname, shellPort, usernameMaster, dsaKey);
-			//Launch map process
-			String pathJar = Constant.APP_PATH_JAR;
-			String method = Slave.SPLIT_MAPPING_FUNCTION;
-			if (Constant.APP_DEBUG) System.out.println("Cmd : " 
-					+ "java -jar"
-					+ Constant.SEPARATOR
-					+ pathJar
-					+ Constant.SEPARATOR
-					+ hostMapper
-					+ Constant.SEPARATOR 
-					+ method 
-					+ Constant.SEPARATOR 
-					+ fileToTreat
-					+ Constant.SEPARATOR
-					+ null);
 			
-			new Shell.Plain(shell).exec("java -jar" 
-					+ Constant.SEPARATOR
-					+ pathJar
-					+ Constant.SEPARATOR
-					+ hostMapper
-					+ Constant.SEPARATOR 
-					+ method 
-					+ Constant.SEPARATOR 
-					+ fileToTreat
-					+ Constant.SEPARATOR
-					+ null);
+			//Launch map process
+			new Shell.Plain(shell).exec(cmd);
+			if (Constant.APP_DEBUG) System.out.println(cmd);
 			
 		} catch (Exception e) {
-			System.out.println("Fail to connect to " + hostname);
-		}
+			// the master is the worker
+			if (nbWorker == 0) {
+				Process proc;
+				try {
+					// Run a java app in a separate system process
+					proc = Runtime.getRuntime().exec(cmd);
+				} catch (IOException e1) {
+					System.out.println("Fail to launch shavadoop slave from " + hostname);
+				}
+			} else {
+				System.out.println("Fail to connect to " + hostMapper);
+			}
+		} 
 	}
 }
