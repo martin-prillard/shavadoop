@@ -1,6 +1,7 @@
 package fr.telecompt.shavadoop.slave;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,14 +12,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import fr.telecompt.shavadoop.master.thread.LaunchShufflingMap;
+import fr.telecompt.shavadoop.slave.thread.ShufflingMapThread;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.LocalRepoFile;
 import fr.telecompt.shavadoop.util.Pair;
 import fr.telecompt.shavadoop.util.PropertiesReader;
+import fr.telecompt.shavadoop.util.Util;
 
 /**
  * Slave object
@@ -31,22 +38,31 @@ public class Slave
 	public final static String SPLIT_MAPPING_FUNCTION = "split_mapping_function";
 	public final static String SHUFFLING_MAP_FUNCTION = "shuffling_map_function";
 	protected PropertiesReader prop = new PropertiesReader();
-	
+	protected int cores = Runtime.getRuntime().availableProcessors();
 	
 	public Slave(){}
 	
 	
-    public Slave(String hostMaster, String functionName, String fileToTreat, String key) {
+    public Slave(String hostMaster, String functionName, String fileToTreat, String keys) {
     	switch (functionName){
 	    	case SPLIT_MAPPING_FUNCTION:
 	    		//Launch map method
 	    		splitMapping(hostMaster, fileToTreat);
 	    		break;
 	    	case SHUFFLING_MAP_FUNCTION:
-	    		//Lanch shuffling map method
-	    		String fileSortedMaps = shufflingMaps(key, fileToTreat);
-	    		//Launch reduce method	
-	    		mappingSortedMaps(key, fileSortedMaps);
+	    		ExecutorService es = Executors.newCachedThreadPool();
+	        	String[] tabKeys = keys.split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
+	        	String[] tabArrayFiles = fileToTreat.split(Constant.FILES_BLOC_SHUFFLING_MAP_SEPARATOR);
+	        	// launch shuffling maps process
+	        	for (int i = 0; i < tabKeys.length; i++) {
+	        		es.execute(new ShufflingMapThread(this, tabKeys[i], tabArrayFiles[i]));
+	        	}
+	    		es.shutdown();
+	    		try {
+	    			es.awaitTermination(Constant.WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+	    		} catch (InterruptedException e) {
+	    			e.printStackTrace();
+	    		}
 	    		break;
 	    	default:
 	    		System.out.println("Function name unknown");
@@ -78,6 +94,7 @@ public class Slave
         	 String fileToShuffle = Constant.F_MAPPING 
         			 + Constant.F_SEPARATOR 
         			 + InetAddress.getLocalHost().getCanonicalHostName();
+        	 
         	 LocalRepoFile.writeFileFromPair(fileToShuffle, unsortedMaps);
         	 
         	 // Send dictionary with UNIQUE key (word) and hostname to the master

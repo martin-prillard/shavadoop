@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import fr.telecompt.shavadoop.util.Constant;
@@ -15,6 +16,7 @@ public class ReceiveSlaveInfo extends Thread {
 	private ServerSocket ss;
 	private BufferedReader in = null;
 	private Map<String, ArrayList<String>> dictionary;
+	private Map<String, ArrayList<String>> partDictionary = new HashMap<String, ArrayList<String>>();
 	
 	public ReceiveSlaveInfo(ServerSocket _ss, Map<String, ArrayList<String>> _dictionary){
 		 ss = _ss;

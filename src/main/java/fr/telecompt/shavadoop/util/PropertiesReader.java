@@ -13,7 +13,8 @@ public class PropertiesReader {
 	public static final String FILE_INPUT = "file_input";
 	public static final String PORT_MASTER = "port_master";
 	public static final String PORT_SHELL = "port_shell";
-	public static final String NB_WORKER = "nb_worker";
+	public static final String WORKER = "worker";
+	public static final String THREAD_BY_CORE = "thread_by_core";
 	public static final String APP_PATH_REPO = "app_path_repo";
 	
 	

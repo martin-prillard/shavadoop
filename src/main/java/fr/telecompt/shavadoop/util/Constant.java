@@ -11,9 +11,12 @@ public class Constant {
 	public final static boolean APP_DEBUG = true;
 	public final static String APP_DEBUG_TITLE = "---------------------------------------------------------";
 	
+	public final static int WAITING_TIMES_SYNCHRO_THREAD = 30;
+	
 	public final static String SEPARATOR = " ";
 	public final static String FILE_SEPARATOR = ", ";
 	public final static String FILES_SHUFFLING_MAP_SEPARATOR = ",";
+	public final static String FILES_BLOC_SHUFFLING_MAP_SEPARATOR = ";";
 	public final static String SOCKET_SEPARATOR_MESSAGE = ";";
 	public final static String SOCKET_END_MESSAGE = "END";
 	

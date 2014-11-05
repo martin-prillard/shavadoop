@@ -22,7 +22,7 @@ public class ShellThread extends Thread {
 
 		PropertiesReader prop = new PropertiesReader();
 		shellPort = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_SHELL));
-		nbWorker = Integer.parseInt(prop.getPropValues(PropertiesReader.NB_WORKER));
+		nbWorker = Integer.parseInt(prop.getPropValues(PropertiesReader.WORKER));
 
 	}
 	
