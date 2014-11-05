@@ -52,7 +52,6 @@ public class Master extends Slave
 	private String fileToTreat = null;
 	private String hostMaster = null;
 	private int nbWorkerMax = 1;
-	
 	// Map file and host
 	private Map<String, String> filesHostMappers = new HashMap<String, String>();
 	
@@ -84,8 +83,8 @@ public class Master extends Slave
 		if (Constant.APP_DEBUG) System.out.println(dsaKey);
 
 		try {
-			hostMaster = InetAddress.getLocalHost().getHostName().toString(); //TODO a supprimer ?
-			Constant.USERNAME_MASTER = InetAddress.getLocalHost().getHostName();
+			hostMaster = InetAddress.getLocalHost().getHostName().toString();
+			Constant.USERNAME_MASTER = System.getProperty("user.name");
 		} catch (Exception e) {e.printStackTrace();}
 		
 		// clean directory
@@ -108,7 +107,7 @@ public class Master extends Slave
 		for (String host : hostsNetwork) {
 			if (hostAlive.size() < nbWorker) {
 				if (isAlive(host)) {
-					System.out.println("Worker : " + host);
+					if (Constant.APP_DEBUG) System.out.println("Worker : " + host);
 					hostAlive.add(host);
 				}
 			} else {
@@ -399,7 +398,6 @@ public class Master extends Slave
              
              // For each files
 			 for (int i = 0; i < listFiles.size(); i++) {
-				 System.out.println(listFiles.get(i));
 	             FileReader fic = new FileReader(listFiles.get(i));
 	             BufferedReader read = new BufferedReader(fic);
 	             String line = null;
@@ -475,3 +473,4 @@ public class Master extends Slave
     	return hostnameMappers;
     }
 }
+

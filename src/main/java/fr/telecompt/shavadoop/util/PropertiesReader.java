@@ -14,7 +14,8 @@ public class PropertiesReader {
 	public static final String PORT_MASTER = "port_master";
 	public static final String PORT_SHELL = "port_shell";
 	public static final String NB_WORKER = "nb_worker";
-	public final static String APP_PATH_REPO = "app_path_repo";
+	public static final String APP_PATH_REPO = "app_path_repo";
+	
 	
 	public String getPropValues(String key) {
 		 

@@ -32,9 +32,7 @@ public class LocalRepoFile {
 			
 			write.close();
 		}
-		catch (Exception e){
-			System.out.println(e.toString());
-		}
+		catch (Exception e){e.printStackTrace();}
 	}
 	
 	public static void writeFile(String nameFile, List<String> content) {
@@ -49,9 +47,7 @@ public class LocalRepoFile {
 			
 			write.close();
 		}
-		catch (Exception e){
-			System.out.println(e.toString());
-		}
+		catch (Exception e){e.printStackTrace();}
 	}
 	
 	public static void writeFileFromPair(String nameFile, List<Pair> content) {

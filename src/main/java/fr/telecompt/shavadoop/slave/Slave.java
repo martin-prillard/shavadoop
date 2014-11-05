@@ -75,7 +75,9 @@ public class Slave
              read.close();   
     		 
              // Write UM File
-        	 String fileToShuffle = Constant.F_MAPPING + Constant.F_SEPARATOR + InetAddress.getLocalHost().getHostName();
+        	 String fileToShuffle = Constant.F_MAPPING 
+        			 + Constant.F_SEPARATOR 
+        			 + InetAddress.getLocalHost().getCanonicalHostName();
         	 LocalRepoFile.writeFileFromPair(fileToShuffle, unsortedMaps);
         	 
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
@@ -177,7 +179,7 @@ public class Slave
         			 + Constant.F_SEPARATOR 
         			 + key
         			 + Constant.F_SEPARATOR 
-        			 + InetAddress.getLocalHost().getHostName();
+        			 + InetAddress.getLocalHost().getCanonicalHostName();
         	 LocalRepoFile.writeFileFromPair(fileToReduce, sortedMaps);
          	
          } catch (IOException e) {
@@ -214,7 +216,7 @@ public class Slave
         			 + Constant.F_SEPARATOR
         			 + key
         			 + Constant.F_SEPARATOR 
-        			 + InetAddress.getLocalHost().getHostName() ;
+        			 + InetAddress.getLocalHost().getCanonicalHostName();
         	 LocalRepoFile.writeFile(fileToAssemble, finalMaps);
         	 
              fic.close();
