@@ -7,8 +7,8 @@ import fr.telecompt.shavadoop.util.Constant;
 
 public class PingThread extends ShellThread {
 	
-	public PingThread(String _dsaKey, String _hostname, String _fileToTreat, String _hostnameMaster) {
-		super(_dsaKey, _hostname, _fileToTreat, _hostnameMaster);
+	public PingThread(boolean _local, String _dsaKey, String _hostname, String _fileToTreat, String _hostnameMaster) {
+		super(_local, _dsaKey, _hostname, _fileToTreat, _hostnameMaster);
 	}
 
 	public void run() {

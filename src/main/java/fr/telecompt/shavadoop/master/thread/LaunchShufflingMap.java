@@ -10,11 +10,8 @@ import fr.telecompt.shavadoop.util.Constant;
 
 public class LaunchShufflingMap extends ShellThread {
 
-	private String key;
-	
-	public LaunchShufflingMap(String _dsaKey, String _hostname, String _fileToTreat, String _key, String _hostMapper) {
-		super(_dsaKey, _hostname, _fileToTreat, _hostMapper);
-		key = _key;
+	public LaunchShufflingMap(boolean _local, String _dsaKey, String _hostname, String _shufflingDictionaryFile, String _hostMapper) {
+		super(_local, _dsaKey, _hostname, _shufflingDictionaryFile, _hostMapper);
 	}
 	
 	public void run() {
@@ -30,33 +27,31 @@ public class LaunchShufflingMap extends ShellThread {
 				+ Constant.SEPARATOR
 				+ method 
 				+ Constant.SEPARATOR 
-				+ fileToTreat
-				+ Constant.SEPARATOR
-				+ key;
+				+ fileToTreat;
 		
-		try {
-			//Connect to the distant computer
-			shell = new SSH(hostname, shellPort, Constant.USERNAME_MASTER, dsaKey);
-
-			//Launch map process
-			new Shell.Plain(shell).exec(cmd);
-			if (Constant.APP_DEBUG) System.out.println(cmd);
-			
-		} catch (Exception e) {
-			// the master is the worker
-			if (hostname.equalsIgnoreCase(Constant.USERNAME_MASTER)) {
-				Process proc;
-				try {
-					// Run a java app in a separate system process
-					proc = Runtime.getRuntime().exec(cmd);
-					if (Constant.APP_DEBUG) System.out.println(cmd);
-				} catch (IOException e1) {
-					System.out.println("Fail to launch shavadoop slave from " + hostname);
-				}
-			} else {
-				System.out.println("Fail to connect to " + hostMapper);
+		// execute on the master's computer
+		if(local) {
+			try {
+				// Run a java app in a separate system process
+				Runtime.getRuntime().exec(cmd);
+				if (Constant.APP_DEBUG) System.out.println("On local : " + cmd);
+			} catch (IOException e1) {
+				System.out.println("Fail to launch shavadoop slave from " + hostname);
 			}
-		} 
+		// execute on a distant computer
+		} else {
+			try {
+				//Connect to the distant computer
+				shell = new SSH(hostname, shellPort, Constant.USERNAME_MASTER, dsaKey);
+
+				//Launch map process
+				new Shell.Plain(shell).exec(cmd);
+				if (Constant.APP_DEBUG) System.out.println("On " + hostname + " : " + cmd);
+				
+			} catch (Exception e) {
+				System.out.println("Fail to connect to " + hostMapper);
+			} 
+		}
 	}
 	
 }

@@ -2,8 +2,6 @@ package fr.telecompt.shavadoop.main;
 
 import fr.telecompt.shavadoop.master.Master;
 import fr.telecompt.shavadoop.slave.Slave;
-import fr.telecompt.shavadoop.util.Constant;
-import fr.telecompt.shavadoop.util.PropertiesReader;
 
 public class Main {
 
@@ -14,11 +12,12 @@ public class Main {
     	if (args.length == 0) {
     		// Launch the master
         	Master m = new Master();
-        	m.initialize();
         	m.launchMapReduce();
-    	} else if (args.length == 4){
+        	
+    	} else if (args.length == 3){
     		// Launch the slave
-    		new Slave(args[0], args[1], args[2], args[3]);
+    		Slave s = new Slave(args[0], args[1], args[2]);
+    		s.launchWork();
     	} else {
     		System.out.println("Not enough args");
     	}

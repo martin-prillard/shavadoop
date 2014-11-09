@@ -1,185 +1,78 @@
 package fr.telecompt.shavadoop.master;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.jcabi.ssh.SSH;
-import com.jcabi.ssh.Shell;
-
-import fr.telecompt.shavadoop.master.thread.ReceiveSlaveInfo;
 import fr.telecompt.shavadoop.master.thread.LaunchShufflingMap;
 import fr.telecompt.shavadoop.master.thread.LaunchSplitMapping;
-import fr.telecompt.shavadoop.slave.Slave;
+import fr.telecompt.shavadoop.master.thread.ReceiveSlaveInfo;
 import fr.telecompt.shavadoop.util.Constant;
-import fr.telecompt.shavadoop.util.LocalRepoFile;
-import fr.telecompt.shavadoop.util.PropertiesReader;
+import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
 /**
  * Master object
  *
  */
-public class Master extends Slave
+public class Master
 {
-	
-	private final Logger logger = LoggerFactory.getLogger(Master.class);
-	
-	private String dsaKey = null;
-	private List<String> hostsNetwork;
-	private String fileIpAdress = null;
-	private int shellPort = 0;
-	private String dsaFile = null;
 	private String fileToTreat = null;
 	private String hostMaster = null;
-	private String hostMasterFull = null;
-	private int nbWorkerMax = 1;
+
+	private int nbWorkerMax;
+	private PropReader prop = new PropReader();
+	private SSHManager sm;
+	private int workersMapper;
+	private int lifeTimeThread;
+	
 	// Map file and host
 	private Map<String, String> filesHostMappers = new HashMap<String, String>();
-	private int workersMapper;
-	private double speedUp = 1; // loi de adam //TODO
-	private int threadByCore;
+	
 	
 	/**
 	 * Clean and initialize the MapReduce process
 	 */
 	public void initialize(){
 		
-		// create directory if not exist
-		LocalRepoFile.createDirectory(new File(Constant.APP_PATH_REPO_RES));
-		LocalRepoFile.createDirectory(new File(Constant.APP_PATH_REPO_LOG));
-
 		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
 
+		lifeTimeThread = Integer.parseInt(prop.getPropValues(PropReader.THREAD_LIFETIME));
+		
+		// create directory if not exist
+		Util.createDirectory(new File(Constant.APP_PATH_REPO_RES));
+
+		// create the shell manager
+		sm = new SSHManager();
+		
 		// get values from properties file
-		dsaFile = prop.getPropValues(PropertiesReader.FILE_DSA);
-		fileIpAdress = prop.getPropValues(PropertiesReader.FILE_IP_ADRESS);
-		fileToTreat = prop.getPropValues(PropertiesReader.FILE_INPUT);
-		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropertiesReader.WORKER));
-		shellPort = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_SHELL));
-		threadByCore = Integer.parseInt(prop.getPropValues(PropertiesReader.THREAD_BY_CORE));
-		
-		// get the list of hosts of the network
-		hostsNetwork = getHostFromFile();
-		
-    	// get dsa key
-		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get DSA Key : " + Constant.APP_DEBUG_TITLE);
-		dsaKey = getDsaKey(dsaFile);
-		if (Constant.APP_DEBUG) System.out.println(dsaKey);
+		fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
+		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
+	
 
 		try {
 			hostMaster = InetAddress.getLocalHost().getHostName();
-			hostMasterFull = InetAddress.getLocalHost().getCanonicalHostName();
 			Constant.USERNAME_MASTER = System.getProperty("user.name");
 		} catch (Exception e) {e.printStackTrace();}
 		
 		// clean directory
-		LocalRepoFile.cleanDirectory(new File(Constant.APP_PATH_REPO_RES)); 
-		LocalRepoFile.cleanDirectory(new File(Constant.APP_PATH_REPO_LOG));
-	}
-	
-	/**
-	 * Return x hosts alive
-	 * @param hosts
-	 * @param nbHost
-	 * @param shellPort
-	 * @param usernameMaster
-	 * @param dsaKey
-	 * @return
-	 */
-	public List<String> getHostAliveCores(int nbWorker) {
-		List<String> hostAlive = new ArrayList<String>();
-		
-		// check first for this computer : the master is the worker
-		for (int i = 0; i < cores; i++) {
-			// the number of worker is the number of cores of this computer
-			if (hostAlive.size() < nbWorker) {
-				hostAlive.add(hostMasterFull);
-			} else {
-				break;
-			}
-		}
-		
-		// if need more worker, use the distant computer
-		if (hostAlive.size() < nbWorker) {
-			for (String host : hostsNetwork) {
-				if (hostAlive.size() < nbWorker) {
-					if (isAlive(host)) {
-						for (int i = 0; i < getCoresNumber(host); i++) {
-							if (hostAlive.size() < nbWorker) {
-								hostAlive.add(host);
-							} else {
-								break;
-							}
-						}
-					}
-				} else {
-					break;
-				}
-			}
-		}
-		
-		return hostAlive;
-	}
-	
-	/**
-	 * Test if a host is alive
-	 * @param host
-	 * @param shellPort
-	 * @param usernameMaster
-	 * @param dsaKey
-	 * @return true if it's alive
-	 */
-	public boolean isAlive(String host) {
-		boolean alive = false;
-		// test if this host is alive
-		try {
-			//Connect to the distant computer
-			Shell shell = new SSH(host, shellPort, Constant.USERNAME_MASTER, dsaKey);
-			new Shell.Plain(shell).exec("echo " + host); 
-			alive = true;
-		} catch (Exception e) {} //fail to connect
-		return alive;
-	}
-	
-	/**
-	 * Return the cores number from the distant computer
-	 * @param host
-	 * @return cores
-	 */
-	public int getCoresNumber(String host) {
-		int cores = 1;
-		// test if this host is alive
-		try {
-			// connect to the distant computer
-			Shell shell = new SSH(host, shellPort, Constant.USERNAME_MASTER, dsaKey);
-			// get the number of cores
-			String cmd = "grep -c ^processor /proc/cpuinfo";
-			String stdout = new Shell.Plain(shell).exec(cmd);
-			cores = Integer.parseInt(stdout.trim()); 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return cores;
+		Util.cleanDirectory(new File(Constant.APP_PATH_REPO_RES)); 
 	}
 	
 	/**
@@ -187,24 +80,28 @@ public class Master extends Slave
 	 */
 	public void launchMapReduce() {
     	
+		initialize();
+		
 		// get workers
 		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
-		List<String> workersMapperCores = getHostAliveCores(nbWorkerMax);
+		List<String> workersMapperCores = sm.getHostAliveCores(nbWorkerMax);
 		if (Constant.APP_DEBUG) System.out.println("Workers core : " + workersMapperCores); 
 		
         // Split the file
 		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting : " + Constant.APP_DEBUG_TITLE);
 		List<String> filesToMap = inputSplitting(workersMapperCores, fileToTreat);
-    	if (Constant.APP_DEBUG) System.out.println("Files after spliting : " + filesToMap);
     	
         // Launch maps process
     	if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch map threads : " + Constant.APP_DEBUG_TITLE);
-        Map<String, ArrayList<String>> groupedDictionary = launchMapThreads(workersMapperCores, filesToMap);
+        Map<String, HashSet<String>> groupedDictionary = launchMapThreads(workersMapperCores, filesToMap);
         if (Constant.APP_DEBUG) System.out.println("Grouped dictionary : " + groupedDictionary);
         
         // Launch shuffling maps process
         if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch shuffling threads : " + Constant.APP_DEBUG_TITLE);
-        Map<String, String> filesHostReducers = launchShufflingMapThreads(groupedDictionary);
+        Map<String, String> filesHostReducers = null;
+		try {
+			filesHostReducers = launchShufflingMapThreads(groupedDictionary);
+		} catch (IOException e) {e.printStackTrace();}
         // Assembling final maps
         if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Assembling final maps : " + Constant.APP_DEBUG_TITLE);
         assemblingFinalMaps(filesHostReducers);
@@ -225,7 +122,6 @@ public class Master extends Slave
              FileReader fic = new FileReader(fileToTreat);
              BufferedReader read = new BufferedReader(fic);
              String line = null;
-             int nbLine = 0;
              int nbFile = 0;
              
              // get the number of line of the file
@@ -250,7 +146,7 @@ public class Master extends Slave
              nbLineByHost = (totalLine - restLineByHost) / (workersMapper);
 
              
-             if (Constant.APP_DEBUG) System.out.println("Nb workers mappers : " + (workersMapper));
+             if (Constant.APP_DEBUG) System.out.println("Nb workers mappers : " + (workersMapper) + " " + workers);
              if (Constant.APP_DEBUG) System.out.println("Nb line to tread : " + (totalLine));
              if (Constant.APP_DEBUG) System.out.println("Nb line by host mapper : " + (nbLineByHost));
              if (Constant.APP_DEBUG) System.out.println("Nb line for the last host mapper : " + (restLineByHost));
@@ -259,21 +155,21 @@ public class Master extends Slave
              List<String> content = new ArrayList<String>();
              
              while ((line = read.readLine()) != null) {
-            	 line = cleanText(line);
             	 // Add line by line to the content file
-            	 content.add(line);
-            	 ++nbLine;
+            	 content.add(Util.cleanText(line));
             	 // Write the complete file by block or if it's the end of the file
-            	 if ((nbLine == nbLineByHost && nbFile < workersMapper - 1)
-            			 || (nbLine == nbLineByHost + restLineByHost && nbFile == workersMapper - 1)) {
+            	 if ((content.size() == nbLineByHost && nbFile < workersMapper - 1)
+            			 || (content.size() == nbLineByHost + restLineByHost && nbFile == workersMapper - 1)) {
                 	 //For each group of line, we write a new file
                 	 ++nbFile;
                 	 String fileToMap = Constant.F_SPLITING + nbFile;
-                	 LocalRepoFile.writeFile(fileToMap, content);
+                	 Util.writeFile(fileToMap, content);
+                	 
+                	 if (Constant.APP_DEBUG) System.out.println("Input file splited in : " + fileToMap);
+                	 		
                 	 //We save names of theses files in a list
                 	 filesToMap.add(fileToMap);
                 	 // Reset
-                	 nbLine = 0;
                 	 content = new ArrayList<String>();
             	 }
              }
@@ -286,20 +182,6 @@ public class Master extends Slave
 		 
 		 return filesToMap;
     }
-    
-    /**
-     * Clean the line
-     * @param line
-     * @return line clean
-     */
-    public String cleanText(String line) {
-    	String clean = line;
-    	// clean the non alpha numeric character or space
-    	clean = clean.replaceAll("[^a-zA-Z0-9\\s]", "");
-    	// just one space beetween each words
-    	clean = clean.replaceAll("\\s+", " ");
-    	return clean;
-    }
 
     /**
      * Launch a thread to execute map on each distant computer
@@ -307,29 +189,36 @@ public class Master extends Slave
      * @param fileIpAdress
      * @return grouped dictionary
      */
-    public Map<String, ArrayList<String>> launchMapThreads(List<String> workersMapperCores, List<String> filesToMap) {
+    public Map<String, HashSet<String>> launchMapThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		if (Constant.APP_DEBUG) System.out.println("Nb workers mappers : " + workersMapper);
+		
+		if (Constant.APP_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
 		if (Constant.APP_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
+		
 		//For each files to map
     	for (int i = 0; i < filesToMap.size(); i++) {
-    		//We launch a map Thread to execute the map process on the distant computer
-			es.execute(new LaunchSplitMapping(dsaKey, workersMapperCores.get(i), filesToMap.get(i), hostMaster));
+    		//We launch a map Thread to execute the map process on a computer
+    		boolean local = false;
+    		if (workersMapperCores.get(i).equalsIgnoreCase(sm.getHostMasterFull())) {
+    			// the worker is the master
+    			local = true;
+    		}
+			es.execute(new LaunchSplitMapping(local, sm.getDsaKey(), workersMapperCores.get(i), filesToMap.get(i), hostMaster));
        	 	//We save the name of the file and the mapper
         	filesHostMappers.put(filesToMap.get(i), workersMapperCores.get(i)); 
     	}
     	es.shutdown();
     	
         // Create dictionary
-    	Map<String, ArrayList<String>> groupedDictionary = null;
+    	Map<String, HashSet<String>> groupedDictionary = null;
 		try {
-			groupedDictionary = createDictionary(workersMapperCores);
+			groupedDictionary = createDictionary();
 		} catch (IOException e) {e.printStackTrace();}
 		
 		//Wait while all the threads are not finished yet
 		try {
-			es.awaitTermination(Constant.WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+			es.awaitTermination(lifeTimeThread, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -343,11 +232,11 @@ public class Master extends Slave
      * @return
      * @throws IOException
      */
-    public Map<String, ArrayList<String>> createDictionary(List<String> workers) throws IOException {
+    public Map<String, HashSet<String>> createDictionary() throws IOException {
     	
-    	Map<String, ArrayList<String>> dictionary = new HashMap<String, ArrayList<String>>();
+    	Map<String, HashSet<String>> dictionary = new HashMap<String, HashSet<String>>();
     	
-		int port = Integer.parseInt(prop.getPropValues(PropertiesReader.PORT_MASTER));
+		int port = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER));
 		
     	// Create dictionnary with socket
     	ServerSocket ss = new ServerSocket(port);
@@ -364,7 +253,7 @@ public class Master extends Slave
     	
 		//Wait while all the threads are not finished yet
 		try {
-			es.awaitTermination(Constant.WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+			es.awaitTermination(lifeTimeThread, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -377,15 +266,16 @@ public class Master extends Slave
     /**
      * Launch a thread to execute shuffling map on each distant computer
      * @param dictionary
+     * @throws IOException 
      */
-    public Map<String, String> launchShufflingMapThreads(Map<String, ArrayList<String>> dictionary) {
+    public Map<String, String> launchShufflingMapThreads(Map<String, HashSet<String>> dictionary) throws IOException {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
 		// Host who have a reduce file to assemble
 		Map<String, String> filesHostReducers = new HashMap<String, String>();
 		
 		// get a list of workers reducer alive
-		List<String> workersReducerCores = getHostAliveCores(nbWorkerMax);
+		List<String> workersReducerCores = sm.getHostAliveCores(nbWorkerMax);
 		
 		int idWorkerReducerCore = 0;
 		String workerReducer = workersReducerCores.get(idWorkerReducerCore);
@@ -402,50 +292,59 @@ public class Master extends Slave
         // Calculate the number of lines for each host
         int nbThreadByCore = (totalReducerTodo - restThreadByCore) / (workersReducer);
         
-        if (Constant.APP_DEBUG) System.out.println("Nb workers core reducer : " + (workersReducer));
+        if (Constant.APP_DEBUG) System.out.println("Nb workers core reducer : " + (workersReducer) + " " + workersReducerCores);
         if (Constant.APP_DEBUG) System.out.println("Nb reduce to do : " + (totalReducerTodo));
         if (Constant.APP_DEBUG) System.out.println("Nb reduce by core : " + (nbThreadByCore));
         if (Constant.APP_DEBUG) System.out.println("Nb reduce for the last core : " + (restThreadByCore));
         
-		String listFilesString = "";
-		List<String> listKey = new ArrayList<String>();
 		// the number of light threads by computer
 		int cptLightThread = 0;
 		
+		// File output
+		String shufflingDictionaryFile = Constant.F_SHUFFLING_DICTIONARY + Constant.F_SEPARATOR + idWorkerReducerCore;
+		FileWriter fw = new FileWriter(shufflingDictionaryFile);
+		BufferedWriter bw = new BufferedWriter(fw);
+		PrintWriter write = new PrintWriter(bw); 
+		
 		//For each key and files to shuffling maps
-		for (Entry<String, ArrayList<String>> e : dictionary.entrySet()) {
+		for (Entry<String, HashSet<String>> e : dictionary.entrySet()) {
 			
-			listFilesString += Util.listToString(e.getValue()) + Constant.FILES_BLOC_SHUFFLING_MAP_SEPARATOR;
-			listKey.add(e.getKey());
+			write.println(e.getKey()
+			    		+ Constant.FILE_SEPARATOR
+			    		+ Util.listToString(e.getValue())); 
+
 			filesHostReducers.put(e.getKey(), workerReducer);
 			++cptLightThread;
 			
-			if ((cptLightThread == nbThreadByCore && cptLightThread < workersReducer - 1)
-					|| (cptLightThread == nbThreadByCore + restThreadByCore && cptLightThread == workersReducer - 1)) {
-				// Remove the last separator
-			    if (listFilesString.length() > 0 && Character.toString(listFilesString.charAt(listFilesString.length()-1)).equals(Constant.FILES_BLOC_SHUFFLING_MAP_SEPARATOR)) {
-			    	listFilesString = listFilesString.substring(0, listFilesString.length()-1);
-			    }
+			if ((cptLightThread == nbThreadByCore && idWorkerReducerCore < workersReducer - 1)
+					|| (cptLightThread == nbThreadByCore + restThreadByCore && idWorkerReducerCore == workersReducer - 1)) {
+				write.close();
 				// launch shuffling map process
-				es.execute(new LaunchShufflingMap(dsaKey, workerReducer, listFilesString, Util.listToString(listKey), hostMaster));
+	    		boolean local = false;
+	    		if (workerReducer.equalsIgnoreCase(sm.getHostMasterFull())) {
+	    			// the worker is the master
+	    			local = true;
+	    		}
+				es.execute(new LaunchShufflingMap(local, sm.getDsaKey(), workerReducer, shufflingDictionaryFile, hostMaster));
 				// if enought heavy threads launch for one distant computer, change the worker reducer
 				++idWorkerReducerCore;
-				workerReducer = workersReducerCores.get(idWorkerReducerCore);
-				cores = getCoresNumber(workerReducer);
-				// reset 
-				listFilesString = "";
-				listKey = new ArrayList<String>();
-				cptLightThread = 0;
+				// if still worker needed
+				if (idWorkerReducerCore < workersReducerCores.size()) {
+					workerReducer = workersReducerCores.get(idWorkerReducerCore);
+					// reset 
+					cptLightThread = 0;
+					shufflingDictionaryFile = Constant.F_SHUFFLING_DICTIONARY + Constant.F_SEPARATOR + idWorkerReducerCore;
+					fw = new FileWriter(shufflingDictionaryFile);
+					bw = new BufferedWriter (fw);
+					write = new PrintWriter(bw); 
+				}
        	 	}
 		}
-		
-		//TODO si pas asser de cores dispo, il faut gerer ça -> adapter le nombre de threads par core en fonction du nombre de reduce à faire
-		//TODO nb thread max by core ?
 		
 		es.shutdown();
 		//Wait while all the threads are not finished yet
 		try {
-			es.awaitTermination(Constant.WAITING_TIMES_SYNCHRO_THREAD, TimeUnit.MINUTES);
+			es.awaitTermination(lifeTimeThread, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -462,7 +361,7 @@ public class Master extends Slave
     	String fileFinalResult = Constant.F_FINAL_RESULT;
     	// Get the list of file
     	List<String> listFiles = new ArrayList<String>();
-    	System.out.println(">>> " + listFiles); //TODO
+    	 
     	for (Entry<String, String> e : filesHostReducers.entrySet()) {
     		listFiles.add(Constant.F_REDUCING 
     				+ Constant.F_SEPARATOR 
@@ -471,6 +370,8 @@ public class Master extends Slave
     				+ e.getValue()); // hostname
     	}
 
+    	if (Constant.APP_DEBUG) System.out.println("Files to merge : " + listFiles);
+    	
     	// Concat data of each files in one
 		try {
              Map<String, Integer> finalResult = new HashMap<String, Integer>();
@@ -494,62 +395,12 @@ public class Master extends Slave
 	             read.close();   
 			 }
 			 
-        	 LocalRepoFile.writeFile(fileFinalResult, finalResult);
+        	 Util.writeFile(fileFinalResult, finalResult);
         	 
          } catch (IOException e) {	
              e.printStackTrace();
          }
     }
-    
-    
-    /**
-     * Return the dsa key
-     * @param dsaFile
-     * @return dsa key
-     */
-	public String getDsaKey(String dsaFile) {
-		String dsaKey = "";	
 
-		try {
-			InputStream ips=new FileInputStream(dsaFile); 
-			InputStreamReader ipsr=new InputStreamReader(ips);
-			BufferedReader br=new BufferedReader(ipsr);
-			String line;
-			while((line=br.readLine())!=null){
-				dsaKey += line + "\n";
-			}
-			br.close();
-		} catch (IOException e) {
-			System.out.println("No dsa file");
-		}
-
-		return dsaKey;
-	}
-	
-    /**
-     * Return list of hostname from a file
-     * @param fileIpAdress
-     * @return
-     */
-    public List<String> getHostFromFile() {
-    	List<String> hostnameMappers = new ArrayList<String>();
-
-		 try {
-             FileReader fic = new FileReader(fileIpAdress);
-             BufferedReader read = new BufferedReader(fic);
-             String line = null;
-             
-             while ((line = read.readLine()) != null) {
-            	 hostnameMappers.add(line);
-             }
-             fic.close();
-             read.close();   
-             
-         } catch (IOException e) {
-             e.printStackTrace();
-         }
-		 
-    	return hostnameMappers;
-    }
 }
 
