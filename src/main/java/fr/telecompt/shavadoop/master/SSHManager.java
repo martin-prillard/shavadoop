@@ -16,9 +16,10 @@ import com.jcabi.ssh.Shell;
 
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
+import fr.telecompt.shavadoop.util.Util;
 
 public class SSHManager {
-
+	
 	private List<String> hostsNetwork;
 	private int shellPort = 0;
 	private int cores = Runtime.getRuntime().availableProcessors();
@@ -28,11 +29,10 @@ public class SSHManager {
 	private PropReader prop = new PropReader();
 	private String hostMasterFull;
 	
-	public SSHManager() {
-		
+	public void initialize() {
 		shellPort = Integer.parseInt(prop.getPropValues(PropReader.PORT_SHELL));
 		dsaFile = prop.getPropValues(PropReader.FILE_DSA);
-		fileIpAdress = prop.getPropValues(PropReader.FILE_IP_ADRESS);
+		fileIpAdress = Constant.NETWORK_IP_FILE;
 		try {
 			hostMasterFull = InetAddress.getLocalHost().getCanonicalHostName();
 		} catch (UnknownHostException e) {e.printStackTrace();}
@@ -41,7 +41,6 @@ public class SSHManager {
 		hostsNetwork = getHostFromFile();
 		
     	// get dsa key
-		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get DSA Key : " + Constant.APP_DEBUG_TITLE);
 		dsaKey = getDsaKey(dsaFile);
 		if (Constant.APP_DEBUG) System.out.println("Dsa key found");
 	}
@@ -56,6 +55,9 @@ public class SSHManager {
 	 * @return
 	 */
 	public List<String> getHostAliveCores(int nbWorker) {
+		
+		if (Constant.APP_DEBUG) System.out.println("Search " + nbWorker + " worker(s) alive...");
+		
 		List<String> hostAlive = new ArrayList<String>();
 		
 		// check first for this computer : the master is the worker
@@ -87,6 +89,8 @@ public class SSHManager {
 			}
 		}
 		
+		if (Constant.APP_DEBUG) System.out.println(hostAlive.size() + " worker(s) alive found !");
+		
 		return hostAlive;
 	}
 	
@@ -107,7 +111,7 @@ public class SSHManager {
 			new Shell.Plain(shell).exec("echo " + host); 
 			alive = true;
 		} catch (Exception e) {
-			System.out.println("Fail to connect to " + host);
+			// System.out.println("Fail to connect to " + host);
 		}
 		return alive;
 	}
@@ -191,4 +195,42 @@ public class SSHManager {
 		return hostMasterFull;
 	}
 	
+	
+	public void generateNetworkIpAdress() {
+		
+//		String cmd = "cat /proc/net/arp | grep -o \"" + prop.getPropValues(PropReader.NETWORK_IP_REGEX) + "\""; //TODO remove
+		String cmd = "arp -a | grep -o \"" + prop.getPropValues(PropReader.NETWORK_IP_REGEX) + "\""; //TODO don't work. Why ??
+
+		try {
+			String line;
+			// Run a java app in a separate system process
+			Process p = Runtime.getRuntime().exec(cmd);
+			p.waitFor();
+			
+			List<String> ipAdress = new ArrayList<String>();
+			
+			BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()) );
+			while ((line = in.readLine()) != null) {
+				if (Constant.APP_DEBUG) System.out.println("On local : " + line);
+				ipAdress.add(line);
+			}
+			in.close();
+			
+			if (Constant.APP_DEBUG) System.out.println("On local : " + cmd);
+			Util.writeFile(Constant.NETWORK_IP_DEFAULT_FILE, ipAdress);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public boolean isLocal(String worker) {
+		boolean local = false;
+		if (worker.equalsIgnoreCase(hostMasterFull)) {
+			// the worker is the master
+			local = true;
+		}
+		return local;
+	}
 }

@@ -1,8 +1,7 @@
 package fr.telecompt.shavadoop.master.thread;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
@@ -15,7 +14,6 @@ import fr.telecompt.shavadoop.util.Constant;
 public class ReceiveSlaveInfo extends Thread {
 
 	private ServerSocket ss;
-	private BufferedReader in = null;
 	private Map<String, HashSet<String>> dictionary;
 	private Map<String, HashSet<String>> partDictionary = new HashMap<String, HashSet<String>>();
 	
@@ -28,19 +26,23 @@ public class ReceiveSlaveInfo extends Thread {
 		try {
 			Socket socket = ss.accept();
 			// BufferedReader to read line by line
-			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream()); 
 			
-			String message = null;
+            try {
+                Object object = objectInput.readObject();
+                if (object instanceof HashMap<?, ?>) {
+                	@SuppressWarnings("unchecked")
+                	Map<String, String> pd =  (HashMap<String, String>) object;
+                	for (Entry<String, String> e : pd.entrySet()) {
+                	    // Add element dictionary in our dictionary
+         	           concatToHashMap(partDictionary, e.getKey(), e.getValue());
+                	}
+                }
+                objectInput.close();
+            } catch (Exception e) {e.printStackTrace();}
 			
-			// If the distant computer say it's done, all is sent
-			while (!(message = in.readLine()).equals(Constant.SOCKET_END_MESSAGE)) {
-	           String[] elements = message.split(Constant.SOCKET_SEPARATOR_MESSAGE);
-	           
-	           // Add element dictionary in our dictionary
-	           concatToHashMap(partDictionary, elements[0], elements[1]);
-	           
-			}
-			
+            objectInput.close();
+            
 			// concat the partDictionary with the dictionary
 			for (Entry<String, HashSet<String>> e : partDictionary.entrySet()) {
 				String word = e.getKey();
@@ -52,9 +54,8 @@ public class ReceiveSlaveInfo extends Thread {
 				}
 			}
 			
-			if (Constant.APP_DEBUG) System.out.println("Master received all dictionary elements from a slave");
-			
-	        in.close();
+			String hostClient = socket.getRemoteSocketAddress().toString();
+			if (Constant.APP_DEBUG) System.out.println("Master received all dictionary elements from " + hostClient);
 
 		} catch (IOException e) {e.printStackTrace();}
 	}

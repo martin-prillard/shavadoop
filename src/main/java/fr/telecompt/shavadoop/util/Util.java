@@ -1,7 +1,9 @@
 package fr.telecompt.shavadoop.util;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -38,6 +40,8 @@ public class Util {
 			}
 			
 			write.close();
+			bw.close();
+			fw.close();
 		}
 		catch (Exception e){e.printStackTrace();}
 	}
@@ -53,6 +57,8 @@ public class Util {
 			}
 			
 			write.close();
+			bw.close();
+			fw.close();
 		}
 		catch (Exception e){e.printStackTrace();}
 	}
@@ -82,6 +88,8 @@ public class Util {
 				}
 				
 				write.close();
+				bw.close();
+				fw.close();
 			}
 			catch (Exception e){
 				System.out.println(e.toString());
@@ -131,12 +139,14 @@ public class Util {
      * @param line
      * @return line clean
      */
-    public static String cleanText(String line) {
+    private static String cleanLine(String line) {
     	String clean = line;
+    	clean = clean.trim();
     	// clean the non alpha numeric character or space
     	clean = clean.replaceAll("[^a-zA-Z0-9\\s]", "");
     	// just one space beetween each words
     	clean = clean.replaceAll("\\s+", " ");
+    	clean = clean.replaceAll("\\t+", " ");
     	return clean;
     }
     
@@ -146,4 +156,37 @@ public class Util {
 	                                  new ArrayBlockingQueue<Runnable>(queueSize, true), 
 	                                  new ThreadPoolExecutor.CallerRunsPolicy());
 	}
+	
+	
+	/**
+	 * Clean a text
+	 * @param fileInput
+	 * @param fileOutput
+	 */
+	public static void cleanText(String fileInput, String fileOutput) {
+		FileReader fr;
+		try {
+			fr = new FileReader(fileInput);
+			BufferedReader br = new BufferedReader(fr); 
+			FileWriter fw = new FileWriter(fileOutput); 
+			BufferedWriter bw = new BufferedWriter (fw);
+			PrintWriter write = new PrintWriter(bw); 
+			String line;
+	
+			while((line = br.readLine()) != null)
+			{ 
+			    line = cleanLine(line);
+			    // don't write out blank lines
+			    if (!line.equals("") || !line.isEmpty()) 
+			    {
+			        write.println(line);
+			    }
+			} 
+			write.close();
+			br.close();
+			fr.close();
+		} catch (Exception e) {e.printStackTrace();} 
+		
+	}
+	
 }

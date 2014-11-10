@@ -1,7 +1,5 @@
 package fr.telecompt.shavadoop.master.thread;
 
-import java.io.IOException;
-
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
@@ -33,9 +31,10 @@ public class LaunchShufflingMap extends ShellThread {
 		if(local) {
 			try {
 				// Run a java app in a separate system process
-				Runtime.getRuntime().exec(cmd);
+				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.APP_DEBUG) System.out.println("On local : " + cmd);
-			} catch (IOException e1) {
+				p.waitFor();
+			} catch (Exception e1) {
 				System.out.println("Fail to launch shavadoop slave from " + hostname);
 			}
 		// execute on a distant computer

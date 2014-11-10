@@ -16,6 +16,11 @@ public class Constant {
 	public final static String SOCKET_SEPARATOR_MESSAGE = ";";
 	public final static String SOCKET_END_MESSAGE = "END";
 	
+	public final static String NETWORK_IP_DEFAULT_FILE = "res/ip_adress";
+	public static String NETWORK_IP_FILE = NETWORK_IP_DEFAULT_FILE;
+	public static int THREAD_LIFETIME;
+	
+	public final static String F_INPUT_CLEANED = APP_PATH_REPO_RES + "input_cleaned";
 	public final static String F_SPLITING = APP_PATH_REPO_RES + "S";
 	public final static String F_MAPPING = APP_PATH_REPO_RES + "UM";
 	public final static String F_SHUFFLING_DICTIONARY = APP_PATH_REPO_RES + "DSM";

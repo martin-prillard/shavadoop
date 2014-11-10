@@ -17,7 +17,7 @@ public class PropReader {
 	public static final String THREAD_MAX_BY_WORKER = "thread_max_by_worker";
 	public static final String THREAD_LIFETIME = "thread_lifetime";
 	public static final String APP_PATH_REPO = "app_path_repo";
-	
+	public static final String NETWORK_IP_REGEX = "network_ip_regex";
 	
 	public String getPropValues(String key) {
 		 
