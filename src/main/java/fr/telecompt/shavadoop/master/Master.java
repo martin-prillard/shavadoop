@@ -356,6 +356,7 @@ public class Master
     	}
 
     	if (Constant.APP_DEBUG) System.out.println("Nb files to merge : " + listFiles.size());
+    	if (Constant.APP_DEBUG) System.out.println("Waitting the end of merging process...");
     	
     	// Concat data of each files in one
 		try {
