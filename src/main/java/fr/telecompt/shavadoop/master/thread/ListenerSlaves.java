@@ -9,14 +9,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.Pair;
 
 public class ListenerSlaves extends Thread {
 
 	private int portMaster;
 	private int nbWorkerMappers;
-	private Map<String, HashSet<String>> dictionary;
+	private Map<String, HashSet<Pair>> dictionary;
 	
-	public ListenerSlaves(int _portMaster, int _nbWorkerMappers, Map<String, HashSet<String>> _dictionary) {
+	public ListenerSlaves(int _portMaster, int _nbWorkerMappers, Map<String, HashSet<Pair>> _dictionary) {
 		portMaster = _portMaster;
 		nbWorkerMappers = _nbWorkerMappers;
 		dictionary = _dictionary;

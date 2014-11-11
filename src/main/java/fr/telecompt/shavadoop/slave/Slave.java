@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -18,8 +17,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.slave.thread.ShufflingMapThread;
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.Pair;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
@@ -36,6 +37,8 @@ public class Slave
 	private String functionName;
 	private String hostMaster;
 	private String fileToTreat;
+	private SSHManager sm;
+	
 	
 	public Slave(){}
 	
@@ -46,49 +49,53 @@ public class Slave
     }
 	
     public void launchWork() {
+    	
+    	sm = new SSHManager();
+    	sm.initialize();
+    	
     	switch (functionName){
     	
-    	case SPLIT_MAPPING_FUNCTION:
-    		//Launch map method
-    		splitMapping(hostMaster, fileToTreat);
-    		break;
-    		
-    	case SHUFFLING_MAP_FUNCTION:
-    		// launch shuffling maps process
-//    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
-//    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker,100); //TODO useful ?
-    		ExecutorService es = Executors.newCachedThreadPool();
-    		try {
-    			InputStream ips = new FileInputStream(fileToTreat); 
-    			InputStreamReader ipsr = new InputStreamReader(ips);
-    			BufferedReader br = new BufferedReader(ipsr);
-    			String shufflingDictionaryLine;
-    			
-    			while((shufflingDictionaryLine = br.readLine()) != null){
-    				String[] elements = shufflingDictionaryLine.split(Constant.FILE_SEPARATOR);
-    				String key = elements[0];
-    				String filesToShuffling = elements[1];
-    				es.execute(new ShufflingMapThread(this, key, filesToShuffling));
-    			}
-    			
-    			br.close();
-    			ipsr.close();
-    			br.close();
-    		} catch (IOException e) {
-    			System.out.println("No shuffling dictionary file");
-    		}
-    		
-    		es.shutdown();
-    		
-    		try {
-    			es.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_LIFETIME)), TimeUnit.MINUTES);
-    		} catch (InterruptedException e) {
-    			e.printStackTrace();
-    		}
-    		break;
-    	default:
-    		System.out.println("Function name unknown");
-    		break;
+	    	case SPLIT_MAPPING_FUNCTION:
+	    		//Launch map method
+	    		splitMapping(hostMaster, fileToTreat);
+	    		break;
+	    		
+	    	case SHUFFLING_MAP_FUNCTION:
+	    		// launch shuffling maps process
+	//    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
+	//    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker,100); //TODO useful ?
+	    		ExecutorService es = Executors.newCachedThreadPool();
+	    		try {
+	    			InputStream ips = new FileInputStream(fileToTreat); 
+	    			InputStreamReader ipsr = new InputStreamReader(ips);
+	    			BufferedReader br = new BufferedReader(ipsr);
+	    			String shufflingDictionaryLine;
+	    			
+	    			while((shufflingDictionaryLine = br.readLine()) != null){
+	    				String[] elements = shufflingDictionaryLine.split(Constant.FILE_SEPARATOR);
+	    				String key = elements[0];
+	    				String filesToShuffling = elements[1];
+	    				es.execute(new ShufflingMapThread(sm, this, key, filesToShuffling));
+	    			}
+	    			
+	    			br.close();
+	    			ipsr.close();
+	    			br.close();
+	    		} catch (IOException e) {
+	    			System.out.println("No shuffling dictionary file");
+	    		}
+	    		
+	    		es.shutdown();
+	    		
+	    		try {
+	    			es.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_LIFETIME)), TimeUnit.MINUTES);
+	    		} catch (InterruptedException e) {
+	    			e.printStackTrace();
+	    		}
+	    		break;
+	    	default:
+	    		System.out.println("Function name unknown");
+	    		break;
     	}
     }
     
@@ -115,7 +122,7 @@ public class Slave
              // Write UM File
         	 String fileToShuffle = Constant.F_MAPPING 
         			 + Constant.F_SEPARATOR 
-        			 + InetAddress.getLocalHost().getCanonicalHostName();
+        			 + sm.getHostFull();
         	 
         	 Util.writeFileFromPair(fileToShuffle, unsortedMaps);
         	 
@@ -142,7 +149,7 @@ public class Slave
     	for (int i = 0; i < words.length; i++) {
     		String word = words[i];
     		//Increment counter value for this word
-    		mapWc.add(new Pair(word, 1));
+    		mapWc.add(new Pair(word, String.valueOf(1)));
     	}
     	
     	return mapWc;
@@ -157,15 +164,15 @@ public class Slave
      */
     private void sendDictionaryElement(String hostMaster, List<Pair> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
     	//Get host master and port
-		int port_master = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER));
+		int portMaster = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER));
 		
-        Socket socket = new Socket(hostMaster, port_master);
+        Socket socket = new Socket(hostMaster, portMaster);
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         
-        Map<String, String> partDictionary = new HashMap<String, String>();
+        Map<String, Pair> partDictionary = new HashMap<String, Pair>();
         for (Pair p : unsortedMaps) {
         	// Send dictionary element
-        	partDictionary.put(p.getKey(), fileToShuffle);
+        	partDictionary.put(p.getVal1(), new Pair(sm.getHostFull(), fileToShuffle));
         }
         
         // Send dictionary element
@@ -182,11 +189,9 @@ public class Slave
      * @param shufflingDictionaryLine
      * @return
      */
-    public String shufflingMaps(String key, String filesToShuffling) {
+    public String shufflingMaps(String key, String[] listFiles) {
     	// Final file to reduce
     	String fileToReduce = null;
-    	// Get the list of file
-    	String[] listFiles = filesToShuffling.split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
     	
     	// Concat data of each files in one
 		 try {
@@ -205,7 +210,7 @@ public class Slave
 		            // Search line refers to this key
 		            if (words[0].equals(key)) {
 			            // Add each line matched with the key to our hashmap
-		            	sortedMaps.add(new Pair(words[0], Integer.parseInt(words[1])));
+		            	sortedMaps.add(new Pair(words[0], words[1]));
 		            }
 	             } 
 	        	 
@@ -217,7 +222,7 @@ public class Slave
         			 + Constant.F_SEPARATOR 
         			 + key
         			 + Constant.F_SEPARATOR 
-        			 + InetAddress.getLocalHost().getCanonicalHostName();
+        			 + sm.getHostFull();
         	 Util.writeFileFromPair(fileToReduce, sortedMaps);
          	
          } catch (IOException e) {
@@ -254,7 +259,7 @@ public class Slave
         			 + Constant.F_SEPARATOR
         			 + key
         			 + Constant.F_SEPARATOR 
-        			 + InetAddress.getLocalHost().getCanonicalHostName();
+        			 + sm.getHostFull();
         	 Util.writeFile(fileToAssemble, finalMaps);
         	 
              fic.close();

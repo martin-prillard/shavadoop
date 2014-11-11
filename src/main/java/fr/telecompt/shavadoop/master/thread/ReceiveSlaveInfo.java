@@ -10,14 +10,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.Pair;
 
 public class ReceiveSlaveInfo extends Thread {
 
 	private ServerSocket ss;
-	private Map<String, HashSet<String>> dictionary;
-	private Map<String, HashSet<String>> partDictionary = new HashMap<String, HashSet<String>>();
+	private Map<String, HashSet<Pair>> dictionary;
+	private Map<String, HashSet<Pair>> partDictionary = new HashMap<String, HashSet<Pair>>();
 	
-	public ReceiveSlaveInfo(ServerSocket _ss, Map<String, HashSet<String>> _dictionary){
+	public ReceiveSlaveInfo(ServerSocket _ss, Map<String, HashSet<Pair>> _dictionary){
 		 ss = _ss;
 		 dictionary = _dictionary;
 	}
@@ -32,10 +33,11 @@ public class ReceiveSlaveInfo extends Thread {
                 Object object = objectInput.readObject();
                 if (object instanceof HashMap<?, ?>) {
                 	@SuppressWarnings("unchecked")
-                	Map<String, String> pd =  (HashMap<String, String>) object;
-                	for (Entry<String, String> e : pd.entrySet()) {
+                	Map<String, Pair> pd =  (HashMap<String, Pair>) object;
+                	for (Entry<String, Pair> e : pd.entrySet()) {
                 	    // Add element dictionary in our dictionary
-         	           concatToHashMap(partDictionary, e.getKey(), e.getValue());
+                		Pair p = e.getValue();
+         	            concatToHashMap(partDictionary, e.getKey(), p.getVal1(), p.getVal2());
                 	}
                 }
                 objectInput.close();
@@ -44,29 +46,29 @@ public class ReceiveSlaveInfo extends Thread {
             objectInput.close();
             
 			// concat the partDictionary with the dictionary
-			for (Entry<String, HashSet<String>> e : partDictionary.entrySet()) {
+			for (Entry<String, HashSet<Pair>> e : partDictionary.entrySet()) {
 				String word = e.getKey();
-				HashSet<String> listFiles = e.getValue();
+				HashSet<Pair> listFilesCaps = e.getValue();
 				if (dictionary.keySet().contains(word)) {
-					dictionary.get(word).addAll(listFiles);
+					dictionary.get(word).addAll(listFilesCaps);
 				} else {
-					dictionary.put(word, listFiles);
+					dictionary.put(word, listFilesCaps);
 				}
 			}
 			
 			String hostClient = socket.getRemoteSocketAddress().toString();
-			if (Constant.APP_DEBUG) System.out.println("Master received all dictionary elements from " + hostClient);
+			if (Constant.MODE_DEBUG) System.out.println("Master received all dictionary elements from " + hostClient);
 
 		} catch (IOException e) {e.printStackTrace();}
 	}
 	
-	public void concatToHashMap(Map<String, HashSet<String>> map, String key, String value) {
+	public void concatToHashMap(Map<String, HashSet<Pair>> map, String key, String hostOwner, String value) {
         if (map.keySet().contains(key)) {
-     	   map.get(key).add(value);
+     	    map.get(key).add(new Pair(hostOwner, value));
         } else {
-        	HashSet<String> listValues = new HashSet<String>();
-        	listValues.add(value);
-        	map.put(key, listValues);
+        	HashSet<Pair> listFilesCaps = new HashSet<Pair>();
+        	listFilesCaps.add(new Pair(hostOwner, value));
+        	map.put(key, listFilesCaps);
         }
 	}
 	

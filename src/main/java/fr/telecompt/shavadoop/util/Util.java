@@ -18,8 +18,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 
-import fr.telecompt.shavadoop.slave.Pair;
-
 public class Util {
 
 	/**
@@ -69,9 +67,9 @@ public class Util {
       		try(
       			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(nameFile, true)))) {
 				for(Pair p : content) {
-					out.println (p.getKey()
+					out.println (p.getVal1()
 				    		+ Constant.FILE_SEPARATOR
-				    		+ p.getValue()); 
+				    		+ p.getVal2()); 
 				}
       		}catch (Exception e) {e.printStackTrace();}
       	 // we create the file
@@ -82,9 +80,9 @@ public class Util {
 				PrintWriter write = new PrintWriter (bw); 
 				
 				for(Pair p : content) {
-				    write.println (p.getKey()
+				    write.println (p.getVal1()
 				    		+ Constant.FILE_SEPARATOR
-				    		+ p.getValue()); 
+				    		+ p.getVal2()); 
 				}
 				
 				write.close();
@@ -120,14 +118,15 @@ public class Util {
 		} catch (IOException e) {e.printStackTrace();}
 	}
 	
-	public static String listToString(Set<String> input) {
+	public static String pairToString(Set<Pair> input) {
 		String res = "";
-		for (String file : input) {
-			res += file + Constant.FILES_SHUFFLING_MAP_SEPARATOR;
+		for (Pair p : input) {
+			res += p.getVal1() + Constant.FILES_SHUFFLING_MAP_SEPARATOR;
+			res += p.getVal2() + Constant.FILES_SHUFFLING_MAP_SEPARATOR_LARGE;
 		}
 		
 		// Remove the last separator
-	    if (res.length() > 0 && Character.toString(res.charAt(res.length()-1)).equals(Constant.FILES_SHUFFLING_MAP_SEPARATOR)) {
+	    if (res.length() > 0 && Character.toString(res.charAt(res.length()-1)).equals(Constant.FILES_SHUFFLING_MAP_SEPARATOR_LARGE)) {
 	    	res = res.substring(0, res.length()-1);
 	    }
 	    

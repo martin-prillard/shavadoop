@@ -8,7 +8,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,12 +18,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FilenameUtils;
+
+import fr.telecompt.shavadoop.master.thread.FileTransfert;
 import fr.telecompt.shavadoop.master.thread.LaunchShufflingMap;
 import fr.telecompt.shavadoop.master.thread.LaunchSplitMapping;
 import fr.telecompt.shavadoop.master.thread.ListenerSlaves;
 import fr.telecompt.shavadoop.master.thread.TaskTracker;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.Pair;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
@@ -35,13 +38,16 @@ import fr.telecompt.shavadoop.util.Util;
 public class Master
 {
 	private String fileInputCleaned = null;
-	private String hostMaster = null;
 	private int portMaster;
 	private int nbWorkerMax;
 	private PropReader prop = new PropReader();
 	private SSHManager sm;
 	private int nbWorkerMappers;
 	private double startTime;
+	
+	// dictionary
+	Map<String, HashSet<Pair>> dictionaryMapping; // water, (lena.enst.fr, /tmp/UM_lena.enst.fr) -> to to shuffling
+	Map<String, String> dictionaryReducing; // water, lena.enst.fr -> to get all RM files
 	
 	public Master(){
 		startTime = System.currentTimeMillis();
@@ -52,12 +58,12 @@ public class Master
 	 */
 	public void initialize(){
 		
-		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
+		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
 
 		// create the shell manager
 		sm = new SSHManager();
 		sm.initialize();
-		if (Constant.APP_DEBUG) System.out.println("Shell manager initialized");
+		if (Constant.MODE_DEBUG) System.out.println("Shell manager initialized");
 		
 		// get values from properties file
 		String fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
@@ -65,20 +71,20 @@ public class Master
 		Constant.THREAD_LIFETIME = Integer.parseInt(prop.getPropValues(PropReader.THREAD_LIFETIME));
 		portMaster = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER));
 		try {
-			hostMaster = InetAddress.getLocalHost().getHostName();
 			Constant.USERNAME_MASTER = System.getProperty("user.name");
 		} catch (Exception e) {e.printStackTrace();}
-		if (Constant.APP_DEBUG) System.out.println("Variables initialized");
+		if (Constant.MODE_DEBUG) System.out.println("Variables initialized");
 		
 		// clean directory
 		Util.createDirectory(new File(Constant.APP_PATH_REPO_RES));
 		Util.cleanDirectory(new File(Constant.APP_PATH_REPO_RES)); 
-		if (Constant.APP_DEBUG) System.out.println(Constant.APP_PATH_REPO_RES + " directory cleaned");
+		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_PATH_REPO_RES + " directory cleaned");
 		
 		// clean the input text
 		fileInputCleaned = Constant.F_INPUT_CLEANED;
 		Util.cleanText(fileToTreat, fileInputCleaned);
-		if (Constant.APP_DEBUG) System.out.println("Input file cleaned");
+		if (Constant.MODE_DEBUG) System.out.println("Input file cleaned");
+		
 	}
 	
 	/**
@@ -86,36 +92,34 @@ public class Master
 	 */
 	public void launchMapReduce() {
     	
-		initialize();
-		
 		// get workers
-		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
+		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
 		List<String> workersMapperCores = sm.getHostAliveCores(nbWorkerMax);
-		if (Constant.APP_DEBUG) System.out.println("Workers core : " + workersMapperCores); 
+		if (Constant.MODE_DEBUG) System.out.println("Workers core : " + workersMapperCores); 
 		
-        // Split the file
-		if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting : " + Constant.APP_DEBUG_TITLE);
+        // Split the file : master
+		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting : " + Constant.APP_DEBUG_TITLE);
 		List<String> filesToMap = inputSplitting(workersMapperCores, fileInputCleaned);
     	
-        // Launch maps process
-    	if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch map threads : " + Constant.APP_DEBUG_TITLE);
-        Map<String, HashSet<String>> groupedDictionary = launchMapThreads(workersMapperCores, filesToMap);
-        if (Constant.APP_DEBUG) System.out.println("Grouped dictionary's size : " + groupedDictionary.size());
+        // Launch maps process : master & slave
+    	if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch map threads : " + Constant.APP_DEBUG_TITLE);
+        dictionaryMapping = launchMapThreads(workersMapperCores, filesToMap);
+        if (Constant.MODE_DEBUG) System.out.println("Grouped dictionary's size : " + dictionaryMapping);
         
-        // Launch shuffling maps process
-        if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch shuffling threads : " + Constant.APP_DEBUG_TITLE);
-        Map<String, String> filesHostReducers = null;
+        // Launch shuffling maps process : master & slave
+        if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch shuffling threads : " + Constant.APP_DEBUG_TITLE);
 		try {
-			filesHostReducers = launchShufflingMapThreads(groupedDictionary);
+			dictionaryReducing = launchShufflingMapThreads();
 		} catch (IOException e) {e.printStackTrace();}
-        // Assembling final maps
-        if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Assembling final maps : " + Constant.APP_DEBUG_TITLE);
-        assemblingFinalMaps(filesHostReducers);
+		
+        // Assembling final maps : master
+        if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Assembling final maps : " + Constant.APP_DEBUG_TITLE);
+        assemblingFinalMaps();
         
         double totalTime = (System.currentTimeMillis() - startTime);
         totalTime = (double) ((totalTime / (1000.0*60.0)) % 60.0);
         
-        if (Constant.APP_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " MapReduce process done in " + totalTime + " minutes " + Constant.APP_DEBUG_TITLE);
+        if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " MapReduce process done in " + totalTime + " minutes " + Constant.APP_DEBUG_TITLE);
 	}
 	
     /**
@@ -124,7 +128,7 @@ public class Master
      */
     public List<String> inputSplitting(List<String> workers, String fileToTreat) {
     	
-    	if (Constant.APP_DEBUG) System.out.println("Shavadoop workflow on : " + fileToTreat);
+    	if (Constant.MODE_DEBUG) System.out.println("Shavadoop workflow on : " + fileToTreat);
     	
     	List<String> filesToMap = new ArrayList<String>();
 		 try {
@@ -154,10 +158,10 @@ public class Master
              nbLineByHost = (totalLine - restLineByHost) / (nbWorkerMappers);
 
              
-             if (Constant.APP_DEBUG) System.out.println("Nb workers mappers : " + (nbWorkerMappers) + " " + workers);
-             if (Constant.APP_DEBUG) System.out.println("Nb line to tread : " + (totalLine));
-             if (Constant.APP_DEBUG) System.out.println("Nb line by host mapper : " + (nbLineByHost));
-             if (Constant.APP_DEBUG) System.out.println("Nb line for the last host mapper : " + (restLineByHost));
+             if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + (nbWorkerMappers) + " " + workers);
+             if (Constant.MODE_DEBUG) System.out.println("Nb line to tread : " + (totalLine));
+             if (Constant.MODE_DEBUG) System.out.println("Nb line by host mapper : " + (nbLineByHost));
+             if (Constant.MODE_DEBUG) System.out.println("Nb line for the last host mapper : " + (restLineByHost));
              
              // Content of the file
              List<String> content = new ArrayList<String>();
@@ -176,7 +180,7 @@ public class Master
                 	 String fileToMap = Constant.F_SPLITING + nbFile;
                 	 Util.writeFile(fileToMap, content);
                 	 
-                	 if (Constant.APP_DEBUG) System.out.println("Input file splited in : " + fileToMap);
+                	 if (Constant.MODE_DEBUG) System.out.println("Input file splited in : " + fileToMap);
                 	 		
                 	 //We save names of theses files in a list
                 	 filesToMap.add(fileToMap);
@@ -200,18 +204,18 @@ public class Master
      * @param fileIpAdress
      * @return grouped dictionary
      */
-    public Map<String, HashSet<String>> launchMapThreads(List<String> workersMapperCores, List<String> filesToMap) {
+    public Map<String, HashSet<Pair>> launchMapThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = new TaskTracker(sm, hostMaster, es, null);
+		TaskTracker ts = new TaskTracker(sm, es, null);
 		
-		if (Constant.APP_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
-		if (Constant.APP_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
+		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
+		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
 		
 		// dictionary
-    	Map<String, HashSet<String>> groupedDictionary = new HashMap<String, HashSet<String>>();
+    	Map<String, HashSet<Pair>> dictionaryMapping = new HashMap<String, HashSet<Pair>>();
     	// listener to get part dictionary from the worker mappers
-    	es.execute(new ListenerSlaves(portMaster, nbWorkerMappers, groupedDictionary));
+    	es.execute(new ListenerSlaves(portMaster, nbWorkerMappers, dictionaryMapping));
     	
 		//For each files to map
     	for (int i = 0; i < filesToMap.size(); i++) {
@@ -220,11 +224,11 @@ public class Master
 	    	} catch(InterruptedException ex) {
 	    	    Thread.currentThread().interrupt();
 	    	}
-			es.execute(new LaunchSplitMapping(sm.isLocal(workersMapperCores.get(i)), sm.getDsaKey(), workersMapperCores.get(i), filesToMap.get(i), hostMaster));
+			es.execute(new LaunchSplitMapping(sm, workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost()));
 			ts.addTask(workersMapperCores.get(i), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
     	}
     	
-    	if (Constant.APP_DEBUG) System.out.println("Waitting the end of maps process...");
+    	if (Constant.MODE_DEBUG) System.out.println("Waitting the end of maps process...");
     	
     	ts.start();
     	
@@ -233,11 +237,9 @@ public class Master
 		//Wait while all the threads are not finished yet
 		try {
 			es.awaitTermination(Constant.THREAD_LIFETIME, TimeUnit.MINUTES);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		} catch (InterruptedException e) {e.printStackTrace();}
 
-		return groupedDictionary;
+		return dictionaryMapping;
     }
     
     /**
@@ -245,13 +247,13 @@ public class Master
      * @param dictionary
      * @throws IOException 
      */
-    public Map<String, String> launchShufflingMapThreads(Map<String, HashSet<String>> dictionary) throws IOException {
+    public Map<String, String> launchShufflingMapThreads() throws IOException {
 		// Host who have a reduce file to assemble
-		Map<String, String> filesHostReducers = new HashMap<String, String>();
+    	Map<String, String> dictionaryReducing = new HashMap<String, String>();
 		
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = new TaskTracker(sm, hostMaster, es, filesHostReducers);
+		TaskTracker ts = new TaskTracker(sm, es, dictionaryReducing);
 		
 		// get a list of workers reducer alive
 		List<String> workersReducerCores = sm.getHostAliveCores(nbWorkerMax);
@@ -260,7 +262,7 @@ public class Master
 		String workerReducer = workersReducerCores.get(idWorkerReducerCore);
 
 		int workersReducer = workersReducerCores.size();
-		int totalReducerTodo = dictionary.size();
+		int totalReducerTodo = dictionaryMapping.size();
 		
         // if too more worker available for reduce process
         if (workersReducer > totalReducerTodo) {
@@ -271,10 +273,10 @@ public class Master
         // Calculate the number of lines for each host
         int nbThreadByCore = (totalReducerTodo - restThreadByCore) / (workersReducer);
         
-        if (Constant.APP_DEBUG) System.out.println("Nb workers core reducer : " + workersReducer + " " + workersReducerCores);
-        if (Constant.APP_DEBUG) System.out.println("Nb reduce to do : " + totalReducerTodo);
-        if (Constant.APP_DEBUG) System.out.println("Nb reduce by core : " + nbThreadByCore);
-        if (Constant.APP_DEBUG) System.out.println("Nb reduce for the last core : " + restThreadByCore);
+        if (Constant.MODE_DEBUG) System.out.println("Nb workers core reducer : " + workersReducer + " " + workersReducerCores);
+        if (Constant.MODE_DEBUG) System.out.println("Nb reduce to do : " + totalReducerTodo);
+        if (Constant.MODE_DEBUG) System.out.println("Nb reduce by core : " + nbThreadByCore);
+        if (Constant.MODE_DEBUG) System.out.println("Nb reduce for the last core : " + restThreadByCore);
         
 		// the number of light threads by computer
 		int cptLightThread = 0;
@@ -286,20 +288,20 @@ public class Master
 		PrintWriter write = new PrintWriter(bw); 
 		
 		//For each key and files to shuffling maps
-		for (Entry<String, HashSet<String>> e : dictionary.entrySet()) {
+		for (Entry<String, HashSet<Pair>> e : dictionaryMapping.entrySet()) {
 			
 			write.println(e.getKey()
 			    		+ Constant.FILE_SEPARATOR
-			    		+ Util.listToString(e.getValue())); 
+			    		+ Util.pairToString(e.getValue())); 
 
-			filesHostReducers.put(e.getKey(), workerReducer);
+			dictionaryReducing.put(e.getKey(), workerReducer);
 			++cptLightThread;
 			
 			if ((cptLightThread == nbThreadByCore && idWorkerReducerCore < workersReducer - 1)
 					|| (cptLightThread == nbThreadByCore + restThreadByCore && idWorkerReducerCore == workersReducer - 1)) {
 				write.close();
 				// launch shuffling map process
-				es.execute(new LaunchShufflingMap(sm.isLocal(workerReducer), sm.getDsaKey(), workerReducer, shufflingDictionaryFile, hostMaster));
+				es.execute(new LaunchShufflingMap(sm, workerReducer, shufflingDictionaryFile));
 				ts.addTask(workerReducer, Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
 				// if enought heavy threads launch for one distant computer, change the worker reducer
 				++idWorkerReducerCore;
@@ -316,7 +318,7 @@ public class Master
        	 	}
 		}
 		
-		if (Constant.APP_DEBUG) System.out.println("Waitting the end of shuffling maps process...");
+		if (Constant.MODE_DEBUG) System.out.println("Waitting the end of shuffling maps process...");
 		
 		fw.close();
 		bw.close();
@@ -325,38 +327,62 @@ public class Master
 		ts.start();
 		
 		es.shutdown();
-		//Wait while all the threads are not finished yet
 		try {
 			es.awaitTermination(Constant.THREAD_LIFETIME, TimeUnit.MINUTES);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		} catch (InterruptedException e) {e.printStackTrace();}
 		
-		return filesHostReducers;
+		return dictionaryReducing;
     }
     
     
     /**
      * Concat final maps together in one file result
      */
-    public void assemblingFinalMaps(Map<String, String> filesHostReducers) {
+    public void assemblingFinalMaps() {
     	
     	// Final file to reduce
     	String fileFinalResult = Constant.F_FINAL_RESULT;
     	// Get the list of file
     	List<String> listFiles = new ArrayList<String>();
     	 
-    	for (Entry<String, String> e : filesHostReducers.entrySet()) {
+    	ExecutorService es = null;
+    	if (Constant.MODE_SCP_FILES) {
+    		es = Executors.newCachedThreadPool();
+    	}
+    	
+    	for (Entry<String, String> e : dictionaryReducing.entrySet()) {
     		String nameFileToMerge = Constant.F_REDUCING 
     				+ Constant.F_SEPARATOR 
     				+ e.getKey() // keyword
     				+ Constant.F_SEPARATOR 
     				+ e.getValue(); // hostname
+    		
+    		if (Constant.MODE_SCP_FILES) {
+    			// if it's a slave's file and not a master's file
+    			if (!e.getValue().equalsIgnoreCase(sm.getHostFull())) {
+		    		// MASTER <- SLAVE files
+		    		String destFile = Constant.APP_PATH_SLAVE + FilenameUtils.getBaseName(nameFileToMerge);
+					// if the file doesn't exist on this computer
+					File f = new File(destFile);
+					if (!f.exists()) {
+						es.execute(new FileTransfert(sm, e.getValue(), nameFileToMerge, destFile));
+					}
+		    		nameFileToMerge = destFile;
+    			}
+    		}
+    		
     		listFiles.add(nameFileToMerge); 
     	}
 
-    	if (Constant.APP_DEBUG) System.out.println("Nb files to merge : " + listFiles.size());
-    	if (Constant.APP_DEBUG) System.out.println("Waitting the end of merging process...");
+    	if (Constant.MODE_SCP_FILES) {
+	    	es.shutdown();
+			try {
+				es.awaitTermination(Constant.THREAD_LIFETIME, TimeUnit.MINUTES);
+			} catch (InterruptedException e) {e.printStackTrace();}
+    	}
+		
+    	if (Constant.MODE_DEBUG) System.out.println("Nb files to merge : " + listFiles.size());
+    	if (Constant.MODE_DEBUG) System.out.println("Waitting the end of merging process...");
     	
     	// Concat data of each files in one
 		try {
@@ -375,7 +401,7 @@ public class Master
 		            // Add each line to our hashmap
 		            finalResult.put(words[0], Integer.parseInt(words[1]));
 		            
-		            if (Constant.APP_DEBUG) System.out.println(words[0] + Constant.FILE_SEPARATOR + Integer.parseInt(words[1]));
+		            if (Constant.MODE_DEBUG) System.out.println(words[0] + Constant.FILE_SEPARATOR + Integer.parseInt(words[1]));
 	             } 
 	        	 
 	             fic.close();

@@ -16,8 +16,11 @@ public class PropReader {
 	public static final String WORKER_MAX = "worker_max";
 	public static final String THREAD_MAX_BY_WORKER = "thread_max_by_worker";
 	public static final String THREAD_LIFETIME = "thread_lifetime";
-	public static final String APP_PATH_REPO = "app_path_repo";
+	public static final String APP_PATH_MASTER = "app_path_master";
+	public static final String APP_PATH_SLAVE = "app_path_slave";
 	public static final String NETWORK_IP_REGEX = "network_ip_regex";
+	public static final String MODE_DEBUG = "mode_debug";
+	public static final String MODE_SCP_FILES = "mode_scp_files";
 	
 	public String getPropValues(String key) {
 		 

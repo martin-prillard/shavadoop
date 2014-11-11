@@ -18,13 +18,13 @@ public class TaskTracker extends Thread {
 	private String hostMaster;
 	private List<List<String>> taskHistory = new ArrayList<List<String>>();
 	private SSHManager sm;
-	private Map<String, String> dictionaryFile = null;
+	private Map<String, String> dictionaryReducing = null;
 	
-	public TaskTracker(SSHManager _sm, String _hostMaster, ExecutorService _es, Map<String, String> _dictionaryFile) {
+	public TaskTracker(SSHManager _sm, ExecutorService _es, Map<String, String> _dictionaryReducing) {
 		sm = _sm;
-		hostMaster = _hostMaster;
+		hostMaster = sm.getHost();
 		es = _es;
-		dictionaryFile = _dictionaryFile;
+		dictionaryReducing = _dictionaryReducing;
 	}
 	
 	/**
@@ -51,7 +51,7 @@ public class TaskTracker extends Thread {
 	 * Check if the workers are alive
 	 */
 	public void check() {
-		if (Constant.APP_DEBUG) System.out.println("TASK_TRACKER : START");
+		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : START");
 		Iterator<List<String>> it = taskHistory.iterator();
 		
 		while (!es.isTerminated()) {
@@ -67,7 +67,7 @@ public class TaskTracker extends Thread {
 					// if the distant worker is dead
 					if (!sm.isLocal(host) && !sm.isAlive(host)) {
 						
-						if (Constant.APP_DEBUG) System.out.println("TASK_TRACKER : " + host + " died"); 
+						if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : " + host + " died"); 
 						
 						// we get an other worker
 						List<String> hostWorker = sm.getHostAliveCores(1);
@@ -75,15 +75,15 @@ public class TaskTracker extends Thread {
 							host = hostWorker.get(0);
 						} else {
 							// it's the master
-							host = sm.getHostMasterFull();
+							host = sm.getHostFull();
 						}
 						// we relaunch the task on a over worker
 						if (!es.isTerminated()) {
 							relaunchTask(host, nameTask, fileTask, key);
-							if (Constant.APP_DEBUG) System.out.println("TASK_TRACKER : redirect " + nameTask + " task on " + host); 
+							if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : redirect " + nameTask + " task on " + host); 
 						}
 					} else {
-						if (Constant.APP_DEBUG) System.out.println("TASK_TRACKER : " + host + " alive");
+						if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : " + host + " alive");
 					}
 				} else {
 					// reset iterator
@@ -97,24 +97,24 @@ public class TaskTracker extends Thread {
 		    	}
 			}
 		}
-		if (Constant.APP_DEBUG) System.out.println("TASK_TRACKER : END");
+		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : END");
 	}
 	
 	public void relaunchTask(String host, String taskName, String fileTask, String key) {
 		// add this new task
 		addTask(host, taskName, fileTask, key);
 		// if needed, modify the dictionary file
-		if (dictionaryFile != null) {
+		if (dictionaryReducing != null) {
 			// erase old information of the worker failed
-			dictionaryFile.put(key, host);
+			dictionaryReducing.put(key, host);
 		}
 		// launch the task
 		switch(taskName){
 			case Slave.SPLIT_MAPPING_FUNCTION:
-				es.execute(new LaunchSplitMapping(sm.isLocal(host), sm.getDsaKey(), host, fileTask, hostMaster));
+				es.execute(new LaunchSplitMapping(sm, host, fileTask, sm.isLocal(host), hostMaster));
 				break;
 			case Slave.SHUFFLING_MAP_FUNCTION:
-				es.execute(new LaunchShufflingMap(sm.isLocal(host), sm.getDsaKey(), host, fileTask, hostMaster));
+				es.execute(new LaunchShufflingMap(sm, host, fileTask));
 				break;
 		}
 	}

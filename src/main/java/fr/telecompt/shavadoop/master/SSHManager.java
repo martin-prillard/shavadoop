@@ -1,6 +1,7 @@
 package fr.telecompt.shavadoop.master;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.List;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
+import fr.telecompt.shavadoop.master.thread.FileTransfert;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
@@ -27,14 +29,24 @@ public class SSHManager {
 	private String dsaFile = null;
 	private String dsaKey = null;
 	private PropReader prop = new PropReader();
-	private String hostMasterFull;
+	private String host;
+	private String hostFull;
+	private String username = System.getProperty("user.name");
+	private String homeDirectory = System.getProperty("user.home");
 	
 	public void initialize() {
 		shellPort = Integer.parseInt(prop.getPropValues(PropReader.PORT_SHELL));
+		
 		dsaFile = prop.getPropValues(PropReader.FILE_DSA);
+		if (dsaFile == null || dsaFile.isEmpty() || dsaFile.equalsIgnoreCase("")) {
+			dsaFile = homeDirectory + Constant.DSA_DEFAULT_FILE;
+		}
+		
 		fileIpAdress = Constant.NETWORK_IP_FILE;
+		
 		try {
-			hostMasterFull = InetAddress.getLocalHost().getCanonicalHostName();
+			hostFull = InetAddress.getLocalHost().getCanonicalHostName();
+			host = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {e.printStackTrace();}
 
 		// get the list of hosts of the network
@@ -42,7 +54,6 @@ public class SSHManager {
 		
     	// get dsa key
 		dsaKey = getDsaKey(dsaFile);
-		if (Constant.APP_DEBUG) System.out.println("Dsa key found");
 	}
 	
 	/**
@@ -56,7 +67,7 @@ public class SSHManager {
 	 */
 	public List<String> getHostAliveCores(int nbWorker) {
 		
-		if (Constant.APP_DEBUG) System.out.println("Search " + nbWorker + " worker(s) alive...");
+		if (Constant.MODE_DEBUG) System.out.println("Search " + nbWorker + " worker(s) alive...");
 		
 		List<String> hostAlive = new ArrayList<String>();
 		
@@ -64,11 +75,14 @@ public class SSHManager {
 		for (int i = 0; i < cores; i++) {
 			// the number of worker is the number of cores of this computer
 			if (hostAlive.size() < nbWorker) {
-				hostAlive.add(hostMasterFull);
+				hostAlive.add(hostFull);
 			} else {
 				break;
 			}
 		}
+		
+		String destFile = Constant.APP_PATH_SLAVE + Constant.APP_JAR;
+		File jar = new File(destFile);
 		
 		// if need more worker, use the distant computer
 		if (hostAlive.size() < nbWorker) {
@@ -77,7 +91,13 @@ public class SSHManager {
 					if (isAlive(host)) {
 						for (int i = 0; i < getCoresNumber(host); i++) {
 							if (hostAlive.size() < nbWorker) {
+								// add to our list of cores alive
 								hostAlive.add(host);
+								// transfert the jar program if needed
+								if (!jar.exists()) {
+									FileTransfert ft = new FileTransfert(this, host, Constant.APP_PATH_JAR, destFile);
+									ft.transfertFileScp();
+								}
 							} else {
 								break;
 							}
@@ -89,7 +109,7 @@ public class SSHManager {
 			}
 		}
 		
-		if (Constant.APP_DEBUG) System.out.println(hostAlive.size() + " worker(s) alive found !");
+		if (Constant.MODE_DEBUG) System.out.println(hostAlive.size() + " worker(s) alive found !");
 		
 		return hostAlive;
 	}
@@ -180,6 +200,7 @@ public class SSHManager {
 				dsaKey += line + "\n";
 			}
 			br.close();
+			if (Constant.MODE_DEBUG) System.out.println("Dsa key found");
 		} catch (IOException e) {
 			System.out.println("No dsa file");
 		}
@@ -191,15 +212,26 @@ public class SSHManager {
 		return dsaKey;
 	}
 
-	public String getHostMasterFull() {
-		return hostMasterFull;
+	public String getHostFull() {
+		return hostFull;
 	}
 	
-	
-	public void generateNetworkIpAdress() {
+	public int getShellPort() {
+		return shellPort;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public static void generateNetworkIpAdress(String regex) {
 		
 //		String cmd = "cat /proc/net/arp | grep -o \"" + prop.getPropValues(PropReader.NETWORK_IP_REGEX) + "\""; //TODO remove
-		String cmd = "arp -a | grep -o \"" + prop.getPropValues(PropReader.NETWORK_IP_REGEX) + "\""; //TODO don't work. Why ??
+		String cmd = "arp -a | grep -o \"" + regex + "\""; //TODO don't work. Why ??
 
 		try {
 			String line;
@@ -211,12 +243,12 @@ public class SSHManager {
 			
 			BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()) );
 			while ((line = in.readLine()) != null) {
-				if (Constant.APP_DEBUG) System.out.println("On local : " + line);
+				if (Constant.MODE_DEBUG) System.out.println("On local : " + line);
 				ipAdress.add(line);
 			}
 			in.close();
 			
-			if (Constant.APP_DEBUG) System.out.println("On local : " + cmd);
+			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 			Util.writeFile(Constant.NETWORK_IP_DEFAULT_FILE, ipAdress);
 			
 		} catch (Exception e) {
@@ -227,7 +259,7 @@ public class SSHManager {
 	
 	public boolean isLocal(String worker) {
 		boolean local = false;
-		if (worker.equalsIgnoreCase(hostMasterFull)) {
+		if (worker.equalsIgnoreCase(hostFull)) {
 			// the worker is the master
 			local = true;
 		}

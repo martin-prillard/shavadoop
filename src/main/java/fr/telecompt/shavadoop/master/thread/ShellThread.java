@@ -2,30 +2,34 @@ package fr.telecompt.shavadoop.master.thread;
 
 import com.jcabi.ssh.Shell;
 
+import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.util.PropReader;
 
 public class ShellThread extends Thread {
 
-	protected boolean local;
 	protected int shellPort;
-	protected String hostname;
+	protected String distantHost;
 	protected String fileToTreat;
 	protected String dsaKey;
 	protected Shell shell;
-	protected String hostMapper;
 	protected int nbWorker;
+	protected String username;
+	protected SSHManager sm;
+	protected boolean local = false;
 	
-	public ShellThread(Boolean _local, String _dsaKey, String _hostname, String _fileToTreat, String _hostMapper) {
-		local = _local;
-		hostname = _hostname;
+	public ShellThread(SSHManager _sm, String _distantHost, String _fileToTreat) {
+		sm = _sm;
+		distantHost = _distantHost;
 		fileToTreat = _fileToTreat;
-		dsaKey = _dsaKey;
-		hostMapper = _hostMapper;
-
+		
+		username = sm.getUsername();
+		shellPort = sm.getShellPort();
+		dsaKey = sm.getDsaKey();
+		
+		local = sm.isLocal(distantHost);
+				
 		PropReader prop = new PropReader();
-		shellPort = Integer.parseInt(prop.getPropValues(PropReader.PORT_SHELL));
 		nbWorker = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
-
 	}
 	
 }

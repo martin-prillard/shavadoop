@@ -3,13 +3,14 @@ package fr.telecompt.shavadoop.master.thread;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
+import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 
 public class LaunchShufflingMap extends ShellThread {
 
-	public LaunchShufflingMap(boolean _local, String _dsaKey, String _hostname, String _shufflingDictionaryFile, String _hostMapper) {
-		super(_local, _dsaKey, _hostname, _shufflingDictionaryFile, _hostMapper);
+	public LaunchShufflingMap(SSHManager _sm, String _distantHost, String _shufflingDictionaryFile) {
+		super(_sm, _distantHost, _shufflingDictionaryFile);
 	}
 	
 	public void run() {
@@ -32,23 +33,23 @@ public class LaunchShufflingMap extends ShellThread {
 			try {
 				// Run a java app in a separate system process
 				Process p = Runtime.getRuntime().exec(cmd);
-				if (Constant.APP_DEBUG) System.out.println("On local : " + cmd);
+				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
 			} catch (Exception e1) {
-				System.out.println("Fail to launch shavadoop slave from " + hostname);
+				System.out.println("Fail to launch shavadoop slave from " + distantHost);
 			}
 		// execute on a distant computer
 		} else {
 			try {
 				//Connect to the distant computer
-				shell = new SSH(hostname, shellPort, Constant.USERNAME_MASTER, dsaKey);
-
+				shell = new SSH(distantHost, shellPort, Constant.USERNAME_MASTER, dsaKey);
+				 
 				//Launch map process
 				new Shell.Plain(shell).exec(cmd);
-				if (Constant.APP_DEBUG) System.out.println("On " + hostname + " : " + cmd);
+				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
 				
 			} catch (Exception e) {
-				System.out.println("Fail to connect to " + hostMapper);
+				System.out.println("Fail to connect to " + distantHost);
 			} 
 		}
 	}
