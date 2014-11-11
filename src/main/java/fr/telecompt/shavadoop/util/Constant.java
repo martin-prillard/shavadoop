@@ -3,7 +3,7 @@ package fr.telecompt.shavadoop.util;
 public class Constant {
 
 	// Shavadoop
-	public final static String APP_VERSION = "v0.3";
+	public final static String APP_VERSION = "v0.4";
 	public final static String APP_EXTENSION = ".jar";
 	public final static String APP_JAR = "shavadoop" + "_" + APP_VERSION + APP_EXTENSION;
 	public final static String USERNAME = System.getProperty("user.name");
