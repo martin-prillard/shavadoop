@@ -38,11 +38,11 @@ public class SSHManager {
 		shellPort = Integer.parseInt(prop.getPropValues(PropReader.PORT_SHELL));
 		
 		dsaFile = prop.getPropValues(PropReader.FILE_DSA);
-		if (dsaFile == null || dsaFile.isEmpty() || dsaFile.equalsIgnoreCase("")) {
-			dsaFile = homeDirectory + Constant.DSA_DEFAULT_FILE;
+		if (dsaFile == null || dsaFile.isEmpty() || dsaFile.trim().equalsIgnoreCase("")) {
+			dsaFile = homeDirectory + Constant.PATH_DSA_DEFAULT_FILE;
 		}
 		
-		fileIpAdress = Constant.NETWORK_IP_FILE;
+		fileIpAdress = Constant.PATH_NETWORK_IP_FILE;
 		
 		try {
 			hostFull = InetAddress.getLocalHost().getCanonicalHostName();
@@ -81,7 +81,7 @@ public class SSHManager {
 			}
 		}
 		
-		String destFile = Constant.APP_PATH_SLAVE + Constant.APP_JAR;
+		String destFile = Constant.PATH_SLAVE + Constant.APP_JAR;
 		File jar = new File(destFile);
 		
 		// if need more worker, use the distant computer
@@ -95,7 +95,7 @@ public class SSHManager {
 								hostAlive.add(host);
 								// transfert the jar program if needed
 								if (!jar.exists()) {
-									FileTransfert ft = new FileTransfert(this, host, Constant.APP_PATH_JAR, destFile);
+									FileTransfert ft = new FileTransfert(this, host, Constant.PATH_JAR, destFile);
 									ft.transfertFileScp();
 								}
 							} else {
@@ -127,7 +127,7 @@ public class SSHManager {
 		// test if this host is alive
 		try {
 			//Connect to the distant computer
-			Shell shell = new SSH(host, shellPort, Constant.USERNAME_MASTER, dsaKey);
+			Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
 			new Shell.Plain(shell).exec("echo " + host); 
 			alive = true;
 		} catch (Exception e) {
@@ -146,7 +146,7 @@ public class SSHManager {
 		// test if this host is alive
 		try {
 			// connect to the distant computer
-			Shell shell = new SSH(host, shellPort, Constant.USERNAME_MASTER, dsaKey);
+			Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
 			// get the number of cores
 			String cmd = "grep -c ^processor /proc/cpuinfo";
 			String stdout = new Shell.Plain(shell).exec(cmd);
@@ -208,26 +208,6 @@ public class SSHManager {
 		return dsaKey;
 	}
 
-	public String getDsaKey() {
-		return dsaKey;
-	}
-
-	public String getHostFull() {
-		return hostFull;
-	}
-	
-	public int getShellPort() {
-		return shellPort;
-	}
-
-	public String getUsername() {
-		return username;
-	}
-
-	public String getHost() {
-		return host;
-	}
-
 	public static void generateNetworkIpAdress(String regex) {
 		
 //		String cmd = "cat /proc/net/arp | grep -o \"" + prop.getPropValues(PropReader.NETWORK_IP_REGEX) + "\""; //TODO remove
@@ -249,7 +229,7 @@ public class SSHManager {
 			in.close();
 			
 			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
-			Util.writeFile(Constant.NETWORK_IP_DEFAULT_FILE, ipAdress);
+			Util.writeFile(Constant.PATH_NETWORK_IP_DEFAULT_FILE, ipAdress);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -264,5 +244,25 @@ public class SSHManager {
 			local = true;
 		}
 		return local;
+	}
+
+	public String getDsaKey() {
+		return dsaKey;
+	}
+
+	public String getHostFull() {
+		return hostFull;
+	}
+	
+	public int getShellPort() {
+		return shellPort;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getHost() {
+		return host;
 	}
 }

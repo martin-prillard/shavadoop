@@ -72,7 +72,7 @@ public class Slave
 	    			String shufflingDictionaryLine;
 	    			
 	    			while((shufflingDictionaryLine = br.readLine()) != null){
-	    				String[] elements = shufflingDictionaryLine.split(Constant.FILE_SEPARATOR);
+	    				String[] elements = shufflingDictionaryLine.split(Constant.SEP_CONTAINS_FILE);
 	    				String key = elements[0];
 	    				String filesToShuffling = elements[1];
 	    				es.execute(new ShufflingMapThread(sm, this, key, filesToShuffling));
@@ -120,8 +120,8 @@ public class Slave
              read.close();   
     		 
              // Write UM File
-        	 String fileToShuffle = Constant.F_MAPPING 
-        			 + Constant.F_SEPARATOR 
+        	 String fileToShuffle = Constant.PATH_F_MAPPING 
+        			 + Constant.SEP_NAME_FILE 
         			 + sm.getHostFull();
         	 
         	 Util.writeFileFromPair(fileToShuffle, unsortedMaps);
@@ -144,7 +144,7 @@ public class Slave
     		mapWc = new ArrayList<Pair>();
     	}
     	//We split the line word by word
-    	String words[] = line.split(Constant.SEPARATOR);
+    	String words[] = line.split(Constant.SEP_WORD);
     	
     	for (int i = 0; i < words.length; i++) {
     		String word = words[i];
@@ -206,7 +206,7 @@ public class Slave
 	
 	             // For each lines of the file
 	             while ((line = read.readLine()) != null) {
-		            String words[] = line.split(Constant.FILE_SEPARATOR);
+		            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
 		            // Search line refers to this key
 		            if (words[0].equals(key)) {
 			            // Add each line matched with the key to our hashmap
@@ -218,10 +218,10 @@ public class Slave
 	             read.close();   
 			 }
 			 
-        	 fileToReduce = Constant.F_SHUFFLING 
-        			 + Constant.F_SEPARATOR 
+        	 fileToReduce = Constant.PATH_F_SHUFFLING 
+        			 + Constant.SEP_NAME_FILE 
         			 + key
-        			 + Constant.F_SEPARATOR 
+        			 + Constant.SEP_NAME_FILE 
         			 + sm.getHostFull();
         	 Util.writeFileFromPair(fileToReduce, sortedMaps);
          	
@@ -246,7 +246,7 @@ public class Slave
              Map<String, Integer> finalMaps = new HashMap<String, Integer>();
              
              while ((line = read.readLine()) != null) {
-            	String words[] = line.split(Constant.FILE_SEPARATOR);
+            	String words[] = line.split(Constant.SEP_CONTAINS_FILE);
          		//Increment counter value for this word
          		if (finalMaps.containsKey(words[0])) {
          			finalMaps.put(words[0], finalMaps.get(words[0]) + Integer.parseInt(words[1]));
@@ -255,10 +255,10 @@ public class Slave
          		}
              }
             
-        	 String fileToAssemble = Constant.F_REDUCING 
-        			 + Constant.F_SEPARATOR
+        	 String fileToAssemble = Constant.PATH_F_REDUCING 
+        			 + Constant.SEP_NAME_FILE
         			 + key
-        			 + Constant.F_SEPARATOR 
+        			 + Constant.SEP_NAME_FILE 
         			 + sm.getHostFull();
         	 Util.writeFile(fileToAssemble, finalMaps);
         	 

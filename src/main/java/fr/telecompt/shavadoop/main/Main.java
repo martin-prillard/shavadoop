@@ -7,10 +7,6 @@ import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 
 public class Main {
-
-
-//	Kill all java processus : //TODO remove
-//	ps -ef | grep java|cut -b10-15 | xargs kill -9
 		
     public static void main( String[] args )
     {
@@ -20,11 +16,11 @@ public class Main {
         	PropReader prop = new PropReader();
         	String ipFile = prop.getPropValues(PropReader.FILE_IP_ADRESS);
         	// if no ip file given
-        	if (ipFile == null || ipFile.equals("")) {
+        	if (ipFile == null || ipFile.trim().equals("")) {
         		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Generate network's IP adress file " + Constant.APP_DEBUG_TITLE);
         		SSHManager.generateNetworkIpAdress(prop.getPropValues(PropReader.NETWORK_IP_REGEX));
         	} else {
-        		Constant.NETWORK_IP_FILE = ipFile;
+        		Constant.PATH_NETWORK_IP_FILE = ipFile;
         	}
         	
     		// Launch the master

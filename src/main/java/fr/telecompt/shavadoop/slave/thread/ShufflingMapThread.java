@@ -29,11 +29,11 @@ public class ShufflingMapThread extends Thread {
 	public void run() {
 		
     	// Get the list of file
-    	String[] listFilesCaps = filesToShuffling.split(Constant.FILES_SHUFFLING_MAP_SEPARATOR_LARGE);
+    	String[] listFilesCaps = filesToShuffling.split(Constant.SEP_FILES_SHUFFLING_MAP_GROUP);
     	String[] listFilesToTreat = new String[listFilesCaps.length];
     	
     	for (int i = 0; i < listFilesCaps.length; i++) {
-    		String[] fileCaps = listFilesCaps[i].split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
+    		String[] fileCaps = listFilesCaps[i].split(Constant.SEP_FILES_SHUFFLING_MAP);
 	    	String fileToTreat = fileCaps[1];
     		listFilesToTreat[i] = fileToTreat;
     	}
@@ -44,10 +44,10 @@ public class ShufflingMapThread extends Thread {
 	    	
 	    	// For each files
 	    	for (int i = 0; i < listFilesCaps.length; i++) {
-		    	String[] fileCaps = listFilesCaps[i].split(Constant.FILES_SHUFFLING_MAP_SEPARATOR);
+		    	String[] fileCaps = listFilesCaps[i].split(Constant.SEP_FILES_SHUFFLING_MAP);
 		    	String hostOwner = fileCaps[0];
 		    	String fileToTreat = fileCaps[1];
-				String destFile = Constant.APP_PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
+				String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
 				// if the file doesn't exist on this computer
 				File f = new File(fileToTreat);
 				if (!f.exists()) {

@@ -33,7 +33,7 @@ public class Util {
 			
 			for(Entry<String, Integer> entry : content.entrySet()) {
 			    write.println (entry.getKey()
-			    		+ Constant.FILE_SEPARATOR
+			    		+ Constant.SEP_CONTAINS_FILE
 			    		+ entry.getValue()); 
 			}
 			
@@ -68,7 +68,7 @@ public class Util {
       			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(nameFile, true)))) {
 				for(Pair p : content) {
 					out.println (p.getVal1()
-				    		+ Constant.FILE_SEPARATOR
+				    		+ Constant.SEP_CONTAINS_FILE
 				    		+ p.getVal2()); 
 				}
       		}catch (Exception e) {e.printStackTrace();}
@@ -81,7 +81,7 @@ public class Util {
 				
 				for(Pair p : content) {
 				    write.println (p.getVal1()
-				    		+ Constant.FILE_SEPARATOR
+				    		+ Constant.SEP_CONTAINS_FILE
 				    		+ p.getVal2()); 
 				}
 				
@@ -121,12 +121,12 @@ public class Util {
 	public static String pairToString(Set<Pair> input) {
 		String res = "";
 		for (Pair p : input) {
-			res += p.getVal1() + Constant.FILES_SHUFFLING_MAP_SEPARATOR;
-			res += p.getVal2() + Constant.FILES_SHUFFLING_MAP_SEPARATOR_LARGE;
+			res += p.getVal1() + Constant.SEP_FILES_SHUFFLING_MAP;
+			res += p.getVal2() + Constant.SEP_FILES_SHUFFLING_MAP_GROUP;
 		}
 		
 		// Remove the last separator
-	    if (res.length() > 0 && Character.toString(res.charAt(res.length()-1)).equals(Constant.FILES_SHUFFLING_MAP_SEPARATOR_LARGE)) {
+	    if (res.length() > 0 && Character.toString(res.charAt(res.length()-1)).equals(Constant.SEP_FILES_SHUFFLING_MAP_GROUP)) {
 	    	res = res.substring(0, res.length()-1);
 	    }
 	    

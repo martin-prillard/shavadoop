@@ -68,20 +68,16 @@ public class Master
 		// get values from properties file
 		String fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
 		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
-		Constant.THREAD_LIFETIME = Integer.parseInt(prop.getPropValues(PropReader.THREAD_LIFETIME));
 		portMaster = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER));
-		try {
-			Constant.USERNAME_MASTER = System.getProperty("user.name");
-		} catch (Exception e) {e.printStackTrace();}
 		if (Constant.MODE_DEBUG) System.out.println("Variables initialized");
 		
 		// clean directory
-		Util.createDirectory(new File(Constant.APP_PATH_REPO_RES));
-		Util.cleanDirectory(new File(Constant.APP_PATH_REPO_RES)); 
-		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_PATH_REPO_RES + " directory cleaned");
+		Util.createDirectory(new File(Constant.PATH_REPO_RES));
+		Util.cleanDirectory(new File(Constant.PATH_REPO_RES)); 
+		if (Constant.MODE_DEBUG) System.out.println(Constant.PATH_REPO_RES + " directory cleaned");
 		
 		// clean the input text
-		fileInputCleaned = Constant.F_INPUT_CLEANED;
+		fileInputCleaned = Constant.PATH_F_INPUT_CLEANED;
 		Util.cleanText(fileToTreat, fileInputCleaned);
 		if (Constant.MODE_DEBUG) System.out.println("Input file cleaned");
 		
@@ -103,8 +99,8 @@ public class Master
     	
         // Launch maps process : master & slave
     	if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch map threads : " + Constant.APP_DEBUG_TITLE);
-        dictionaryMapping = launchMapThreads(workersMapperCores, filesToMap);
-        if (Constant.MODE_DEBUG) System.out.println("Grouped dictionary's size : " + dictionaryMapping);
+        dictionaryMapping = launchSplitMappingThreads(workersMapperCores, filesToMap);
+        if (Constant.MODE_DEBUG) System.out.println("Mapping dictionary's size : " + dictionaryMapping.size());
         
         // Launch shuffling maps process : master & slave
         if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Launch shuffling threads : " + Constant.APP_DEBUG_TITLE);
@@ -177,7 +173,7 @@ public class Master
             			 || (content.size() == nbLineByHost + restLineByHost && nbFile == nbWorkerMappers - 1)) {
                 	 //For each group of line, we write a new file
                 	 ++nbFile;
-                	 String fileToMap = Constant.F_SPLITING + nbFile;
+                	 String fileToMap = Constant.PATH_F_SPLITING + nbFile;
                 	 Util.writeFile(fileToMap, content);
                 	 
                 	 if (Constant.MODE_DEBUG) System.out.println("Input file splited in : " + fileToMap);
@@ -204,7 +200,7 @@ public class Master
      * @param fileIpAdress
      * @return grouped dictionary
      */
-    public Map<String, HashSet<Pair>> launchMapThreads(List<String> workersMapperCores, List<String> filesToMap) {
+    public Map<String, HashSet<Pair>> launchSplitMappingThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
 		TaskTracker ts = new TaskTracker(sm, es, null);
@@ -282,7 +278,7 @@ public class Master
 		int cptLightThread = 0;
 		
 		// File output
-		String shufflingDictionaryFile = Constant.F_SHUFFLING_DICTIONARY + Constant.F_SEPARATOR + idWorkerReducerCore;
+		String shufflingDictionaryFile = Constant.PATH_F_SHUFFLING_DICTIONARY + Constant.SEP_NAME_FILE + idWorkerReducerCore;
 		FileWriter fw = new FileWriter(shufflingDictionaryFile);
 		BufferedWriter bw = new BufferedWriter(fw);
 		PrintWriter write = new PrintWriter(bw); 
@@ -291,7 +287,7 @@ public class Master
 		for (Entry<String, HashSet<Pair>> e : dictionaryMapping.entrySet()) {
 			
 			write.println(e.getKey()
-			    		+ Constant.FILE_SEPARATOR
+			    		+ Constant.SEP_CONTAINS_FILE
 			    		+ Util.pairToString(e.getValue())); 
 
 			dictionaryReducing.put(e.getKey(), workerReducer);
@@ -310,7 +306,7 @@ public class Master
 					workerReducer = workersReducerCores.get(idWorkerReducerCore);
 					// reset 
 					cptLightThread = 0;
-					shufflingDictionaryFile = Constant.F_SHUFFLING_DICTIONARY + Constant.F_SEPARATOR + idWorkerReducerCore;
+					shufflingDictionaryFile = Constant.PATH_F_SHUFFLING_DICTIONARY + Constant.SEP_NAME_FILE + idWorkerReducerCore;
 					fw = new FileWriter(shufflingDictionaryFile);
 					bw = new BufferedWriter(fw);
 					write = new PrintWriter(bw); 
@@ -341,7 +337,7 @@ public class Master
     public void assemblingFinalMaps() {
     	
     	// Final file to reduce
-    	String fileFinalResult = Constant.F_FINAL_RESULT;
+    	String fileFinalResult = Constant.PATH_F_FINAL_RESULT;
     	// Get the list of file
     	List<String> listFiles = new ArrayList<String>();
     	 
@@ -351,17 +347,17 @@ public class Master
     	}
     	
     	for (Entry<String, String> e : dictionaryReducing.entrySet()) {
-    		String nameFileToMerge = Constant.F_REDUCING 
-    				+ Constant.F_SEPARATOR 
+    		String nameFileToMerge = Constant.PATH_F_REDUCING 
+    				+ Constant.SEP_NAME_FILE 
     				+ e.getKey() // keyword
-    				+ Constant.F_SEPARATOR 
+    				+ Constant.SEP_NAME_FILE 
     				+ e.getValue(); // hostname
     		
     		if (Constant.MODE_SCP_FILES) {
     			// if it's a slave's file and not a master's file
     			if (!e.getValue().equalsIgnoreCase(sm.getHostFull())) {
 		    		// MASTER <- SLAVE files
-		    		String destFile = Constant.APP_PATH_SLAVE + FilenameUtils.getBaseName(nameFileToMerge);
+		    		String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(nameFileToMerge);
 					// if the file doesn't exist on this computer
 					File f = new File(destFile);
 					if (!f.exists()) {
@@ -397,11 +393,11 @@ public class Master
 	
 	             // For each lines of the file
 	             while ((line = read.readLine()) != null) {
-		            String words[] = line.split(Constant.FILE_SEPARATOR);
+		            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
 		            // Add each line to our hashmap
 		            finalResult.put(words[0], Integer.parseInt(words[1]));
 		            
-		            if (Constant.MODE_DEBUG) System.out.println(words[0] + Constant.FILE_SEPARATOR + Integer.parseInt(words[1]));
+		            if (Constant.MODE_DEBUG) System.out.println(words[0] + Constant.SEP_CONTAINS_FILE + Integer.parseInt(words[1]));
 	             } 
 	        	 
 	             fic.close();

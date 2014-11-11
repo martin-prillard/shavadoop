@@ -22,7 +22,7 @@ public class LaunchSplitMapping extends ShellThread {
 	
 	public void run() {
 		
-		String pathJar = Constant.APP_PATH_JAR;
+		String pathJar = Constant.PATH_JAR;
 		String method = Slave.SPLIT_MAPPING_FUNCTION;
 
 		// execute on the master's computer
@@ -40,11 +40,11 @@ public class LaunchSplitMapping extends ShellThread {
 		} else {
 			try {
 				// connect to the distant computer
-				shell = new SSH(distantHost, shellPort, Constant.USERNAME_MASTER, dsaKey);
+				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
 				if (Constant.MODE_SCP_FILES) {
 					// MASTER files -> SLAVE
-					String destFile = Constant.APP_PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
+					String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
 					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile);
 					ft.transfertFileScp();
 					fileToTreat = destFile;
@@ -61,16 +61,5 @@ public class LaunchSplitMapping extends ShellThread {
 			} 
 		}
 	}
-	
-	public String getCmdJar(String pathJar, String host, String method, String fileToTreat) {
-		return "java -jar" 
-				+ Constant.SEPARATOR
-				+ pathJar
-				+ Constant.SEPARATOR
-				+ host
-				+ Constant.SEPARATOR 
-				+ method 
-				+ Constant.SEPARATOR 
-				+ fileToTreat;
-	}
+
 }

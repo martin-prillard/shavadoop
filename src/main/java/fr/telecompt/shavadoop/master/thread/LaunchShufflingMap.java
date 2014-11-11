@@ -1,5 +1,7 @@
 package fr.telecompt.shavadoop.master.thread;
 
+import org.apache.commons.io.FilenameUtils;
+
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
@@ -15,23 +17,14 @@ public class LaunchShufflingMap extends ShellThread {
 	
 	public void run() {
 		
-		String pathJar = Constant.APP_PATH_JAR;
+		String pathJar = Constant.PATH_JAR;
 		String method = Slave.SHUFFLING_MAP_FUNCTION;
-		
-		String cmd = "java -jar" 
-				+ Constant.SEPARATOR
-				+ pathJar
-				+ Constant.SEPARATOR
-				+ null 
-				+ Constant.SEPARATOR
-				+ method 
-				+ Constant.SEPARATOR 
-				+ fileToTreat;
 		
 		// execute on the master's computer
 		if(local) {
 			try {
 				// Run a java app in a separate system process
+				String cmd = getCmdJar(pathJar, null, method, fileToTreat);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
@@ -42,8 +35,18 @@ public class LaunchShufflingMap extends ShellThread {
 		} else {
 			try {
 				//Connect to the distant computer
-				shell = new SSH(distantHost, shellPort, Constant.USERNAME_MASTER, dsaKey);
-				 
+				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
+				
+				if (Constant.MODE_SCP_FILES) {
+					// MASTER DSM file -> SLAVE
+					String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
+					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile);
+					ft.transfertFileScp();
+					fileToTreat = destFile;
+				}
+				
+				String cmd = getCmdJar(pathJar, null, method, fileToTreat);
+				
 				//Launch map process
 				new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
