@@ -32,7 +32,7 @@ public class ShellThread extends Thread {
 		PropReader prop = new PropReader();
 		nbWorker = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
 	}
-	
+    
 	public String getCmdJar(String pathJar, String host, String method, String fileToTreat) {
 		return "java -jar" 
 				+ Constant.SEP_WORD

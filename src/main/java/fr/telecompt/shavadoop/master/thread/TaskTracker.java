@@ -1,9 +1,11 @@
 package fr.telecompt.shavadoop.master.thread;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 
 import fr.telecompt.shavadoop.master.SSHManager;
@@ -16,7 +18,7 @@ public class TaskTracker extends Thread {
 	
 	private ExecutorService es;
 	private String hostMaster;
-	private List<List<String>> taskHistory = new ArrayList<List<String>>();
+	private Map<Thread, List<String>> taskHistory = new HashMap<Thread, List<String>>();
 	private SSHManager sm;
 	private Map<String, String> dictionaryReducing = null;
 	
@@ -34,13 +36,13 @@ public class TaskTracker extends Thread {
 	 * @param fileToTreat
 	 * @param key
 	 */
-	public void addTask(String host, String taskName, String fileToTreat, String key) {
+	public void addTask(Thread thread, String host, String taskName, String fileToTreat, String key) {
 		List<String> taskInfos = new ArrayList<String>();
 		taskInfos.add(host);
 		taskInfos.add(taskName);
 		taskInfos.add(fileToTreat);
 		taskInfos.add(key);
-		taskHistory.add(taskInfos);
+		taskHistory.put(thread, taskInfos);
 	}
 	
 	public void run() {
@@ -52,17 +54,18 @@ public class TaskTracker extends Thread {
 	 */
 	public void check() {
 		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : START");
-		Iterator<List<String>> it = taskHistory.iterator();
+		Iterator<Entry<Thread, List<String>>> it = taskHistory.entrySet().iterator();
 		
 		while (!es.isTerminated()) {
 			if (!es.isTerminated()) {
 				if(it.hasNext()) {
 					
-					List<String> task = it.next();
-					String host = task.get(0);
-					String nameTask = task.get(1);
-					String fileTask = task.get(2);
-					String key = task.get(3);
+					Map.Entry<Thread, List<String>> task = (Map.Entry<Thread, List<String>>)it.next();
+					Thread thread = task.getKey();
+					String host = task.getValue().get(0);
+					String nameTask = task.getValue().get(1);
+					String fileTask = task.getValue().get(2);
+					String key = task.getValue().get(3);
 					
 					// if the distant worker is dead
 					if (!sm.isLocal(host) && !sm.isAlive(host)) {
@@ -79,7 +82,7 @@ public class TaskTracker extends Thread {
 						}
 						// we relaunch the task on a over worker
 						if (!es.isTerminated()) {
-							relaunchTask(host, nameTask, fileTask, key);
+							relaunchTask(thread, host, nameTask, fileTask, key);
 							if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : redirect " + nameTask + " task on " + host); 
 						}
 					} else {
@@ -87,7 +90,7 @@ public class TaskTracker extends Thread {
 					}
 				} else {
 					// reset iterator
-					it = taskHistory.iterator();
+					it = taskHistory.entrySet().iterator();
 				}
 				// wait before check an other worker
 		    	try {
@@ -100,9 +103,9 @@ public class TaskTracker extends Thread {
 		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : END");
 	}
 	
-	public void relaunchTask(String host, String taskName, String fileTask, String key) {
+	public void relaunchTask(Thread thread, String host, String taskName, String fileTask, String key) {
 		// add this new task
-		addTask(host, taskName, fileTask, key);
+		addTask(thread, host, taskName, fileTask, key);
 		// if needed, modify the dictionary file
 		if (dictionaryReducing != null) {
 			// erase old information of the worker failed
@@ -117,5 +120,7 @@ public class TaskTracker extends Thread {
 				es.execute(new LaunchShufflingMap(sm, host, fileTask));
 				break;
 		}
+		//interrupt the old thread
+		thread.interrupt();
 	}
 }

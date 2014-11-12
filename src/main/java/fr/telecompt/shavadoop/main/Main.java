@@ -15,16 +15,18 @@ public class Main {
     		// get network's ip adress
         	PropReader prop = new PropReader();
         	String ipFile = prop.getPropValues(PropReader.FILE_IP_ADRESS);
+        	SSHManager sm = new SSHManager();
+        	sm.initialize();
         	// if no ip file given
         	if (ipFile == null || ipFile.trim().equals("")) {
         		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Generate network's IP adress file " + Constant.APP_DEBUG_TITLE);
-        		SSHManager.generateNetworkIpAdress(prop.getPropValues(PropReader.NETWORK_IP_REGEX));
+        		sm.generateNetworkIpAdress(prop.getPropValues(PropReader.NETWORK_IP_REGEX));
         	} else {
         		Constant.PATH_NETWORK_IP_FILE = ipFile;
         	}
         	
     		// Launch the master
-        	Master m = new Master();
+        	Master m = new Master(sm);
         	m.initialize();
         	m.launchMapReduce();
         	

@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import fr.telecompt.shavadoop.master.SSHManager;
@@ -62,9 +61,8 @@ public class Slave
 	    		
 	    	case SHUFFLING_MAP_FUNCTION:
 	    		// launch shuffling maps process
-	//    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
-	//    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker,100); //TODO useful ?
-	    		ExecutorService es = Executors.newCachedThreadPool();
+	    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
+	    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker,100);
 	    		try {
 	    			InputStream ips = new FileInputStream(fileToTreat); 
 	    			InputStreamReader ipsr = new InputStreamReader(ips);

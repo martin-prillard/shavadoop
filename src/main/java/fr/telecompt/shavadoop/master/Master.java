@@ -49,8 +49,9 @@ public class Master
 	Map<String, HashSet<Pair>> dictionaryMapping; // water, (lena.enst.fr, /tmp/UM_lena.enst.fr) -> to to shuffling
 	Map<String, String> dictionaryReducing; // water, lena.enst.fr -> to get all RM files
 	
-	public Master(){
+	public Master(SSHManager _sm){
 		startTime = System.currentTimeMillis();
+		sm = _sm;
 	}
 	
 	/**
@@ -59,11 +60,6 @@ public class Master
 	public void initialize(){
 		
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
-
-		// create the shell manager
-		sm = new SSHManager();
-		sm.initialize();
-		if (Constant.MODE_DEBUG) System.out.println("Shell manager initialized");
 		
 		// get values from properties file
 		String fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
@@ -220,8 +216,9 @@ public class Master
 	    	} catch(InterruptedException ex) {
 	    	    Thread.currentThread().interrupt();
 	    	}
-			es.execute(new LaunchSplitMapping(sm, workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost()));
-			ts.addTask(workersMapperCores.get(i), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
+	    	Thread smt = new LaunchSplitMapping(sm, workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost());
+			es.execute(smt);
+			ts.addTask(smt, workersMapperCores.get(i), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
     	}
     	
     	if (Constant.MODE_DEBUG) System.out.println("Waitting the end of maps process...");
@@ -297,8 +294,9 @@ public class Master
 					|| (cptLightThread == nbThreadByCore + restThreadByCore && idWorkerReducerCore == workersReducer - 1)) {
 				write.close();
 				// launch shuffling map process
-				es.execute(new LaunchShufflingMap(sm, workerReducer, shufflingDictionaryFile));
-				ts.addTask(workerReducer, Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
+				Thread smt = new LaunchShufflingMap(sm, workerReducer, shufflingDictionaryFile);
+				es.execute(smt);
+				ts.addTask(smt, workerReducer, Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
 				// if enought heavy threads launch for one distant computer, change the worker reducer
 				++idWorkerReducerCore;
 				// if still worker needed

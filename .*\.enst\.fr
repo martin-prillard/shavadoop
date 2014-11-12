@@ -1,0 +1,384 @@
+# Nmap 6.00 scan initiated Wed Nov 12 12:06:10 2014 as: nmap -sn -o .*\.enst\.fr 137.194.35.13/23 | awk '{print $5}' | grep
+Nmap scan report for ssh.enst.fr (137.194.34.9)
+Host is up (0.00020s latency).
+Nmap scan report for unixtp-01.enst.fr (137.194.34.28)
+Host is up (0.00017s latency).
+Nmap scan report for da101-02.enst.fr (137.194.34.131)
+Host is up (0.00021s latency).
+Nmap scan report for da101-05.enst.fr (137.194.34.134)
+Host is up (0.00043s latency).
+Nmap scan report for da101-06.enst.fr (137.194.34.135)
+Host is up (0.00042s latency).
+Nmap scan report for da101-08.enst.fr (137.194.34.137)
+Host is up (0.00040s latency).
+Nmap scan report for da101-09.enst.fr (137.194.34.138)
+Host is up (0.00047s latency).
+Nmap scan report for da101-11.enst.fr (137.194.34.140)
+Host is up (0.00033s latency).
+Nmap scan report for da101-15.enst.fr (137.194.34.144)
+Host is up (0.00021s latency).
+Nmap scan report for da101-16.enst.fr (137.194.34.145)
+Host is up (0.00020s latency).
+Nmap scan report for da101-17.enst.fr (137.194.34.146)
+Host is up (0.00022s latency).
+Nmap scan report for da101-18.enst.fr (137.194.34.147)
+Host is up (0.00021s latency).
+Nmap scan report for crdn-01.enst.fr (137.194.34.177)
+Host is up (0.00046s latency).
+Nmap scan report for crdn-03.enst.fr (137.194.34.179)
+Host is up (0.00045s latency).
+Nmap scan report for crdn-05.enst.fr (137.194.34.181)
+Host is up (0.00044s latency).
+Nmap scan report for crdn-06.enst.fr (137.194.34.182)
+Host is up (0.00043s latency).
+Nmap scan report for crdn-07.enst.fr (137.194.34.183)
+Host is up (0.00068s latency).
+Nmap scan report for crdn-08.enst.fr (137.194.34.184)
+Host is up (0.00042s latency).
+Nmap scan report for crdn-09.enst.fr (137.194.34.185)
+Host is up (0.00041s latency).
+Nmap scan report for db001-02.enst.fr (137.194.34.194)
+Host is up (0.00033s latency).
+Nmap scan report for db001-03.enst.fr (137.194.34.195)
+Host is up (0.00032s latency).
+Nmap scan report for db001-05.enst.fr (137.194.34.197)
+Host is up (0.00031s latency).
+Nmap scan report for db001-07.enst.fr (137.194.34.199)
+Host is up (0.00029s latency).
+Nmap scan report for db001-08.enst.fr (137.194.34.200)
+Host is up (0.00029s latency).
+Nmap scan report for db001-09.enst.fr (137.194.34.201)
+Host is up (0.00028s latency).
+Nmap scan report for db001-10.enst.fr (137.194.34.202)
+Host is up (0.00028s latency).
+Nmap scan report for db001-11.enst.fr (137.194.34.203)
+Host is up (0.00033s latency).
+Nmap scan report for printer-db001.enst.fr (137.194.34.205)
+Host is up (0.00082s latency).
+Nmap scan report for c45-01.enst.fr (137.194.34.225)
+Host is up (0.00023s latency).
+Nmap scan report for c45-02.enst.fr (137.194.34.226)
+Host is up (0.00022s latency).
+Nmap scan report for c45-03.enst.fr (137.194.34.227)
+Host is up (0.00021s latency).
+Nmap scan report for c45-04.enst.fr (137.194.34.228)
+Host is up (0.00021s latency).
+Nmap scan report for c45-06.enst.fr (137.194.34.230)
+Host is up (0.00019s latency).
+Nmap scan report for c45-07.enst.fr (137.194.34.231)
+Host is up (0.00019s latency).
+Nmap scan report for c45-08.enst.fr (137.194.34.232)
+Host is up (0.00018s latency).
+Nmap scan report for c45-10.enst.fr (137.194.34.234)
+Host is up (0.00017s latency).
+Nmap scan report for c45-11.enst.fr (137.194.34.235)
+Host is up (0.00016s latency).
+Nmap scan report for 10g1-tpunix.enst.fr (137.194.34.251)
+Host is up (0.00054s latency).
+Nmap scan report for 10g2-tpunix.enst.fr (137.194.34.252)
+Host is up (0.012s latency).
+Nmap scan report for gw-tpunix.enst.fr (137.194.34.254)
+Host is up (0.00061s latency).
+Nmap scan report for c130-01.enst.fr (137.194.35.1)
+Host is up (0.00014s latency).
+Nmap scan report for c130-02.enst.fr (137.194.35.2)
+Host is up (0.00021s latency).
+Nmap scan report for c130-03.enst.fr (137.194.35.3)
+Host is up (0.00017s latency).
+Nmap scan report for c130-04.enst.fr (137.194.35.4)
+Host is up (0.000066s latency).
+Nmap scan report for c130-05.enst.fr (137.194.35.5)
+Host is up (0.00015s latency).
+Nmap scan report for c130-06.enst.fr (137.194.35.6)
+Host is up (0.00014s latency).
+Nmap scan report for c130-07.enst.fr (137.194.35.7)
+Host is up (0.00020s latency).
+Nmap scan report for c130-08.enst.fr (137.194.35.8)
+Host is up (0.00011s latency).
+Nmap scan report for c130-09.enst.fr (137.194.35.9)
+Host is up (0.00018s latency).
+Nmap scan report for c130-10.enst.fr (137.194.35.10)
+Host is up (0.00017s latency).
+Nmap scan report for c130-11.enst.fr (137.194.35.11)
+Host is up (0.00019s latency).
+Nmap scan report for c130-13.enst.fr (137.194.35.13)
+Host is up (0.000034s latency).
+Nmap scan report for c130-15.enst.fr (137.194.35.15)
+Host is up (0.00016s latency).
+Nmap scan report for c130-16.enst.fr (137.194.35.16)
+Host is up (0.00016s latency).
+Nmap scan report for c130-17.enst.fr (137.194.35.17)
+Host is up (0.00011s latency).
+Nmap scan report for c130-18.enst.fr (137.194.35.18)
+Host is up (0.00020s latency).
+Nmap scan report for c130-19.enst.fr (137.194.35.19)
+Host is up (0.00021s latency).
+Nmap scan report for c130-20.enst.fr (137.194.35.20)
+Host is up (0.00019s latency).
+Nmap scan report for c130-21.enst.fr (137.194.35.21)
+Host is up (0.00019s latency).
+Nmap scan report for c130-22.enst.fr (137.194.35.22)
+Host is up (0.00045s latency).
+Nmap scan report for c130-23.enst.fr (137.194.35.23)
+Host is up (0.00018s latency).
+Nmap scan report for c130-24.enst.fr (137.194.35.24)
+Host is up (0.00017s latency).
+Nmap scan report for c130-26.enst.fr (137.194.35.26)
+Host is up (0.00026s latency).
+Nmap scan report for c130-27.enst.fr (137.194.35.27)
+Host is up (0.00024s latency).
+Nmap scan report for c130-29.enst.fr (137.194.35.29)
+Host is up (0.00022s latency).
+Nmap scan report for c130-30.enst.fr (137.194.35.30)
+Host is up (0.00062s latency).
+Nmap scan report for c130-31.enst.fr (137.194.35.31)
+Host is up (0.00056s latency).
+Nmap scan report for c130-32.enst.fr (137.194.35.32)
+Host is up (0.00021s latency).
+Nmap scan report for c130-33.enst.fr (137.194.35.33)
+Host is up (0.00020s latency).
+Nmap scan report for c130-34.enst.fr (137.194.35.34)
+Host is up (0.00030s latency).
+Nmap scan report for c130-35.enst.fr (137.194.35.35)
+Host is up (0.00028s latency).
+Nmap scan report for c130-36.enst.fr (137.194.35.36)
+Host is up (0.00027s latency).
+Nmap scan report for c130-37.enst.fr (137.194.35.37)
+Host is up (0.00026s latency).
+Nmap scan report for c130-38.enst.fr (137.194.35.38)
+Host is up (0.00025s latency).
+Nmap scan report for c130-39.enst.fr (137.194.35.39)
+Host is up (0.00024s latency).
+Nmap scan report for c130-40.enst.fr (137.194.35.40)
+Host is up (0.00023s latency).
+Nmap scan report for c129-01.enst.fr (137.194.35.65)
+Host is up (0.00052s latency).
+Nmap scan report for c129-02.enst.fr (137.194.35.66)
+Host is up (0.00051s latency).
+Nmap scan report for c129-03.enst.fr (137.194.35.67)
+Host is up (0.00050s latency).
+Nmap scan report for c129-04.enst.fr (137.194.35.68)
+Host is up (0.00048s latency).
+Nmap scan report for c129-06.enst.fr (137.194.35.70)
+Host is up (0.00045s latency).
+Nmap scan report for c129-07.enst.fr (137.194.35.71)
+Host is up (0.00043s latency).
+Nmap scan report for c129-09.enst.fr (137.194.35.73)
+Host is up (0.00040s latency).
+Nmap scan report for c129-12.enst.fr (137.194.35.76)
+Host is up (0.00036s latency).
+Nmap scan report for c129-13.enst.fr (137.194.35.77)
+Host is up (0.00034s latency).
+Nmap scan report for c129-15.enst.fr (137.194.35.79)
+Host is up (0.00029s latency).
+Nmap scan report for c129-16.enst.fr (137.194.35.80)
+Host is up (0.00028s latency).
+Nmap scan report for c129-18.enst.fr (137.194.35.82)
+Host is up (0.00025s latency).
+Nmap scan report for c129-19.enst.fr (137.194.35.83)
+Host is up (0.00024s latency).
+Nmap scan report for c129-20.enst.fr (137.194.35.84)
+Host is up (0.00021s latency).
+Nmap scan report for c128-01.enst.fr (137.194.35.97)
+Host is up (0.00017s latency).
+Nmap scan report for c128-02.enst.fr (137.194.35.98)
+Host is up (0.00016s latency).
+Nmap scan report for c128-03.enst.fr (137.194.35.99)
+Host is up (0.00055s latency).
+Nmap scan report for c128-05.enst.fr (137.194.35.101)
+Host is up (0.00051s latency).
+Nmap scan report for c128-06.enst.fr (137.194.35.102)
+Host is up (0.00050s latency).
+Nmap scan report for c128-07.enst.fr (137.194.35.103)
+Host is up (0.00049s latency).
+Nmap scan report for c128-08.enst.fr (137.194.35.104)
+Host is up (0.00048s latency).
+Nmap scan report for c128-10.enst.fr (137.194.35.106)
+Host is up (0.00046s latency).
+Nmap scan report for c128-11.enst.fr (137.194.35.107)
+Host is up (0.00045s latency).
+Nmap scan report for c128-12.enst.fr (137.194.35.108)
+Host is up (0.00044s latency).
+Nmap scan report for c128-13.enst.fr (137.194.35.109)
+Host is up (0.00043s latency).
+Nmap scan report for c128-14.enst.fr (137.194.35.110)
+Host is up (0.00042s latency).
+Nmap scan report for c128-15.enst.fr (137.194.35.111)
+Host is up (0.00041s latency).
+Nmap scan report for c128-16.enst.fr (137.194.35.112)
+Host is up (0.00040s latency).
+Nmap scan report for c128-17.enst.fr (137.194.35.113)
+Host is up (0.00039s latency).
+Nmap scan report for c128-18.enst.fr (137.194.35.114)
+Host is up (0.00038s latency).
+Nmap scan report for c128-19.enst.fr (137.194.35.115)
+Host is up (0.00037s latency).
+Nmap scan report for c128-20.enst.fr (137.194.35.116)
+Host is up (0.00035s latency).
+Nmap scan report for c127-01.enst.fr (137.194.35.129)
+Host is up (0.00023s latency).
+Nmap scan report for c127-02.enst.fr (137.194.35.130)
+Host is up (0.00022s latency).
+Nmap scan report for c127-03.enst.fr (137.194.35.131)
+Host is up (0.00021s latency).
+Nmap scan report for c127-04.enst.fr (137.194.35.132)
+Host is up (0.00020s latency).
+Nmap scan report for c127-05.enst.fr (137.194.35.133)
+Host is up (0.00019s latency).
+Nmap scan report for c127-06.enst.fr (137.194.35.134)
+Host is up (0.00018s latency).
+Nmap scan report for c127-07.enst.fr (137.194.35.135)
+Host is up (0.00018s latency).
+Nmap scan report for c127-08.enst.fr (137.194.35.136)
+Host is up (0.00017s latency).
+Nmap scan report for c127-09.enst.fr (137.194.35.137)
+Host is up (0.00036s latency).
+Nmap scan report for c127-10.enst.fr (137.194.35.138)
+Host is up (0.00033s latency).
+Nmap scan report for c127-12.enst.fr (137.194.35.140)
+Host is up (0.00031s latency).
+Nmap scan report for c127-13.enst.fr (137.194.35.141)
+Host is up (0.00030s latency).
+Nmap scan report for c127-14.enst.fr (137.194.35.142)
+Host is up (0.00029s latency).
+Nmap scan report for c127-15.enst.fr (137.194.35.143)
+Host is up (0.00028s latency).
+Nmap scan report for c127-17.enst.fr (137.194.35.145)
+Host is up (0.00026s latency).
+Nmap scan report for c127-18.enst.fr (137.194.35.146)
+Host is up (0.00025s latency).
+Nmap scan report for c127-19.enst.fr (137.194.35.147)
+Host is up (0.00023s latency).
+Nmap scan report for c127-20.enst.fr (137.194.35.148)
+Host is up (0.00022s latency).
+Nmap scan report for c126-01.enst.fr (137.194.35.161)
+Host is up (0.00023s latency).
+Nmap scan report for c126-02.enst.fr (137.194.35.162)
+Host is up (0.00018s latency).
+Nmap scan report for c126-03.enst.fr (137.194.35.163)
+Host is up (0.00021s latency).
+Nmap scan report for c126-04.enst.fr (137.194.35.164)
+Host is up (0.00020s latency).
+Nmap scan report for c126-05.enst.fr (137.194.35.165)
+Host is up (0.00019s latency).
+Nmap scan report for c126-06.enst.fr (137.194.35.166)
+Host is up (0.00018s latency).
+Nmap scan report for c126-07.enst.fr (137.194.35.167)
+Host is up (0.00024s latency).
+Nmap scan report for c126-08.enst.fr (137.194.35.168)
+Host is up (0.00016s latency).
+Nmap scan report for c126-09.enst.fr (137.194.35.169)
+Host is up (0.00022s latency).
+Nmap scan report for c126-10.enst.fr (137.194.35.170)
+Host is up (0.00018s latency).
+Nmap scan report for c126-11.enst.fr (137.194.35.171)
+Host is up (0.00023s latency).
+Nmap scan report for c126-12.enst.fr (137.194.35.172)
+Host is up (0.00023s latency).
+Nmap scan report for c126-13.enst.fr (137.194.35.173)
+Host is up (0.00022s latency).
+Nmap scan report for c126-14.enst.fr (137.194.35.174)
+Host is up (0.00033s latency).
+Nmap scan report for c126-15.enst.fr (137.194.35.175)
+Host is up (0.00031s latency).
+Nmap scan report for c126-16.enst.fr (137.194.35.176)
+Host is up (0.00012s latency).
+Nmap scan report for c126-17.enst.fr (137.194.35.177)
+Host is up (0.00029s latency).
+Nmap scan report for c126-18.enst.fr (137.194.35.178)
+Host is up (0.00028s latency).
+Nmap scan report for c126-19.enst.fr (137.194.35.179)
+Host is up (0.00027s latency).
+Nmap scan report for c126-20.enst.fr (137.194.35.180)
+Host is up (0.00026s latency).
+Nmap scan report for c126-21.enst.fr (137.194.35.181)
+Host is up (0.00025s latency).
+Nmap scan report for c126-22.enst.fr (137.194.35.182)
+Host is up (0.00024s latency).
+Nmap scan report for c126-23.enst.fr (137.194.35.183)
+Host is up (0.00023s latency).
+Nmap scan report for c126-24.enst.fr (137.194.35.184)
+Host is up (0.00022s latency).
+Nmap scan report for c126-25.enst.fr (137.194.35.185)
+Host is up (0.00022s latency).
+Nmap scan report for c125-01.enst.fr (137.194.35.193)
+Host is up (0.00017s latency).
+Nmap scan report for c125-02.enst.fr (137.194.35.194)
+Host is up (0.00016s latency).
+Nmap scan report for c125-03.enst.fr (137.194.35.195)
+Host is up (0.00020s latency).
+Nmap scan report for c125-04.enst.fr (137.194.35.196)
+Host is up (0.00017s latency).
+Nmap scan report for c125-05.enst.fr (137.194.35.197)
+Host is up (0.00038s latency).
+Nmap scan report for c125-06.enst.fr (137.194.35.198)
+Host is up (0.00037s latency).
+Nmap scan report for c125-07.enst.fr (137.194.35.199)
+Host is up (0.00014s latency).
+Nmap scan report for c125-08.enst.fr (137.194.35.200)
+Host is up (0.00021s latency).
+Nmap scan report for c125-09.enst.fr (137.194.35.201)
+Host is up (0.00020s latency).
+Nmap scan report for c125-10.enst.fr (137.194.35.202)
+Host is up (0.00035s latency).
+Nmap scan report for c125-11.enst.fr (137.194.35.203)
+Host is up (0.00033s latency).
+Nmap scan report for c125-12.enst.fr (137.194.35.204)
+Host is up (0.00031s latency).
+Nmap scan report for c125-13.enst.fr (137.194.35.205)
+Host is up (0.00030s latency).
+Nmap scan report for c125-14.enst.fr (137.194.35.206)
+Host is up (0.00029s latency).
+Nmap scan report for c125-15.enst.fr (137.194.35.207)
+Host is up (0.00015s latency).
+Nmap scan report for c125-16.enst.fr (137.194.35.208)
+Host is up (0.00014s latency).
+Nmap scan report for c125-17.enst.fr (137.194.35.209)
+Host is up (0.00038s latency).
+Nmap scan report for c125-18.enst.fr (137.194.35.210)
+Host is up (0.00030s latency).
+Nmap scan report for c125-19.enst.fr (137.194.35.211)
+Host is up (0.00028s latency).
+Nmap scan report for c125-20.enst.fr (137.194.35.212)
+Host is up (0.00017s latency).
+Nmap scan report for c124-01.enst.fr (137.194.35.225)
+Host is up (0.00023s latency).
+Nmap scan report for c124-02.enst.fr (137.194.35.226)
+Host is up (0.00024s latency).
+Nmap scan report for c124-03.enst.fr (137.194.35.227)
+Host is up (0.00024s latency).
+Nmap scan report for c124-04.enst.fr (137.194.35.228)
+Host is up (0.00021s latency).
+Nmap scan report for c124-05.enst.fr (137.194.35.229)
+Host is up (0.00022s latency).
+Nmap scan report for c124-06.enst.fr (137.194.35.230)
+Host is up (0.00021s latency).
+Nmap scan report for c124-07.enst.fr (137.194.35.231)
+Host is up (0.00020s latency).
+Nmap scan report for c124-08.enst.fr (137.194.35.232)
+Host is up (0.00037s latency).
+Nmap scan report for c124-09.enst.fr (137.194.35.233)
+Host is up (0.00036s latency).
+Nmap scan report for c124-10.enst.fr (137.194.35.234)
+Host is up (0.00035s latency).
+Nmap scan report for c124-11.enst.fr (137.194.35.235)
+Host is up (0.00034s latency).
+Nmap scan report for c124-12.enst.fr (137.194.35.236)
+Host is up (0.00032s latency).
+Nmap scan report for c124-13.enst.fr (137.194.35.237)
+Host is up (0.00031s latency).
+Nmap scan report for c124-14.enst.fr (137.194.35.238)
+Host is up (0.00030s latency).
+Nmap scan report for c124-15.enst.fr (137.194.35.239)
+Host is up (0.00022s latency).
+Nmap scan report for c124-16.enst.fr (137.194.35.240)
+Host is up (0.00026s latency).
+Nmap scan report for c124-17.enst.fr (137.194.35.241)
+Host is up (0.00017s latency).
+Nmap scan report for c124-18.enst.fr (137.194.35.242)
+Host is up (0.00035s latency).
+Nmap scan report for c124-19.enst.fr (137.194.35.243)
+Host is up (0.00033s latency).
+Nmap scan report for c124-20.enst.fr (137.194.35.244)
+Host is up (0.00032s latency).
+# Nmap done at Wed Nov 12 12:06:12 2014 -- 512 IP addresses (191 hosts up) scanned in 2.52 seconds

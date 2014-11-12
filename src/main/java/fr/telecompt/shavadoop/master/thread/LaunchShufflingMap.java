@@ -1,5 +1,7 @@
 package fr.telecompt.shavadoop.master.thread;
 
+import java.io.InterruptedIOException;
+
 import org.apache.commons.io.FilenameUtils;
 
 import com.jcabi.ssh.SSH;
@@ -15,25 +17,28 @@ public class LaunchShufflingMap extends ShellThread {
 		super(_sm, _distantHost, _shufflingDictionaryFile);
 	}
 	
+    @Override
+    public void interrupt() {
+        super.interrupt();
+    }
+
+    
 	public void run() {
 		
-		String pathJar = Constant.PATH_JAR;
-		String method = Slave.SHUFFLING_MAP_FUNCTION;
-		
-		// execute on the master's computer
-		if(local) {
-			try {
+        try {
+
+			String pathJar = Constant.PATH_JAR;
+			String method = Slave.SHUFFLING_MAP_FUNCTION;
+			
+			// execute on the master's computer
+			if(local) {
 				// Run a java app in a separate system process
 				String cmd = getCmdJar(pathJar, null, method, fileToTreat);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
-			} catch (Exception e1) {
-				System.out.println("Fail to launch shavadoop slave from " + distantHost);
-			}
-		// execute on a distant computer
-		} else {
-			try {
+			// execute on a distant computer
+			} else {
 				//Connect to the distant computer
 				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
@@ -50,11 +55,17 @@ public class LaunchShufflingMap extends ShellThread {
 				//Launch map process
 				new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
-				
-			} catch (Exception e) {
-				System.out.println("Fail to connect to " + distantHost);
-			} 
-		}
+			}
+			
+        } catch (InterruptedIOException e) { // if thread was interrupted
+            Thread.currentThread().interrupt();
+            if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker failed was interrupted");
+        } catch (Exception e) {
+            if (!isInterrupted()) { // if other exceptions
+            	System.out.println("Fail to launch shavadoop slave from " + distantHost);
+            } else { 
+            	if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker failed was interrupted");
+            }
+        }
 	}
-	
 }

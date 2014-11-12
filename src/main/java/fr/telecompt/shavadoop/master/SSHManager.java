@@ -33,8 +33,12 @@ public class SSHManager {
 	private String hostFull;
 	private String username = System.getProperty("user.name");
 	private String homeDirectory = System.getProperty("user.home");
+	private String ipAdress;
 	
 	public void initialize() {
+		
+		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize SSH Manager " + Constant.APP_DEBUG_TITLE);
+
 		shellPort = Integer.parseInt(prop.getPropValues(PropReader.PORT_SHELL));
 		
 		dsaFile = prop.getPropValues(PropReader.FILE_DSA);
@@ -47,6 +51,7 @@ public class SSHManager {
 		try {
 			hostFull = InetAddress.getLocalHost().getCanonicalHostName();
 			host = InetAddress.getLocalHost().getHostName();
+			ipAdress = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {e.printStackTrace();}
 
 		// get the list of hosts of the network
@@ -208,14 +213,18 @@ public class SSHManager {
 		return dsaKey;
 	}
 
-	public static void generateNetworkIpAdress(String regex) {
+	public void generateNetworkIpAdress(String regex) {
 		
-//		String cmd = "cat /proc/net/arp | grep -o \"" + prop.getPropValues(PropReader.NETWORK_IP_REGEX) + "\""; //TODO remove
-		String cmd = "arp -a | grep -o \"" + regex + "\""; //TODO don't work. Why ??
-
+		String cmdLine = "nmap -sn " + ipAdress + "/24 | awk \'{print $5}\' | grep -o " + prop.getPropValues(PropReader.NETWORK_IP_REGEX);
+		
 		try {
 			String line;
 			// Run a java app in a separate system process
+			String[] cmd = {
+					"/bin/sh",
+					"-c",
+					cmdLine
+			};
 			Process p = Runtime.getRuntime().exec(cmd);
 			p.waitFor();
 			
@@ -223,12 +232,11 @@ public class SSHManager {
 			
 			BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()) );
 			while ((line = in.readLine()) != null) {
-				if (Constant.MODE_DEBUG) System.out.println("On local : " + line);
 				ipAdress.add(line);
 			}
 			in.close();
 			
-			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
+			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmdLine);
 			Util.writeFile(Constant.PATH_NETWORK_IP_DEFAULT_FILE, ipAdress);
 			
 		} catch (Exception e) {
