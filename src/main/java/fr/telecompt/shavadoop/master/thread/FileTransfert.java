@@ -21,24 +21,30 @@ public class FileTransfert extends ShellThread {
 	}
 	
 	public void transfertFileScp() {
-		String cmd = "scp " + fileToTreat + " " + destFile;
+		String cmd = "scp " + fileToTreat + " " + username + "@" + sm.getHostFull() + ":" + destFile;
 		// execute on the master's computer
-		if(local) {
+//		if(local) {
 			try {
 				// Run a java app in a separate system process
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
-			} catch (Exception e) {e.printStackTrace();}
-		// execute on a distant computer
-		} else {
-			try {
-				Shell shell = new SSH(distantHost, shellPort, username, dsaKey);
-				// execute scp command
-				new Shell.Plain(shell).exec(cmd);
-				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
-			} catch (Exception e) {e.printStackTrace();}
-		}
+			} catch (Exception e) {
+				System.out.println("Error on local : " + cmd);
+				e.printStackTrace();
+			}
+//		// execute on a distant computer
+//		} else {
+//			try {
+//				Shell shell = new SSH(distantHost, shellPort, username, dsaKey);
+//				// execute scp command
+//				new Shell.Plain(shell).exec(cmd);
+//				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
+//			} catch (Exception e) {
+//				System.out.println("Error on " + distantHost + " : " + cmd);
+//				e.printStackTrace();
+//			}
+//		}
 	}
 	
 }

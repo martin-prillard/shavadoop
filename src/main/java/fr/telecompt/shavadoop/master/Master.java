@@ -362,8 +362,8 @@ public class Master
 					File f = new File(destFile);
 					if (!f.exists()) {
 						es.execute(new FileTransfert(sm, e.getValue(), nameFileToMerge, destFile));
+			    		nameFileToMerge = destFile;
 					}
-		    		nameFileToMerge = destFile;
     			}
     		}
     		

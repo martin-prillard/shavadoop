@@ -94,7 +94,7 @@ public class SSHManager {
 								// add to our list of cores alive
 								hostAlive.add(host);
 								// transfert the jar program if needed
-								if (!jar.exists()) {
+								if (Constant.MODE_SCP_FILES && !jar.exists()) {
 									FileTransfert ft = new FileTransfert(this, host, Constant.PATH_JAR, destFile);
 									ft.transfertFileScp();
 								}
