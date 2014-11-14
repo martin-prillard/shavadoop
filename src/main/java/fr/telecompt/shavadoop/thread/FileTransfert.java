@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.master.thread;
+package fr.telecompt.shavadoop.thread;
 
 import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;

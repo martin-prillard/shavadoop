@@ -11,12 +11,14 @@ public class Main {
     public static void main( String[] args )
     {
     	
+    	SSHManager sm = new SSHManager();
+    	sm.initialize();
+    	
     	if (args.length == 0) {
+    		
     		// get network's ip adress
         	PropReader prop = new PropReader();
         	String ipFile = prop.getPropValues(PropReader.FILE_IP_ADRESS);
-        	SSHManager sm = new SSHManager();
-        	sm.initialize();
         	// if no ip file given
         	if (ipFile == null || ipFile.trim().equals("")) {
         		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Generate network's IP adress file " + Constant.APP_DEBUG_TITLE);
@@ -30,9 +32,9 @@ public class Main {
         	m.initialize();
         	m.launchMapReduce();
         	
-    	} else if (args.length == 3){
+    	} else if (args.length == 4){
     		// Launch the slave
-    		Slave s = new Slave(args[0], args[1], args[2]);
+    		Slave s = new Slave(sm, args[0], args[1], args[2], args[3]);
     		s.launchWork();
     	} else {
     		System.out.println("Not enough args");

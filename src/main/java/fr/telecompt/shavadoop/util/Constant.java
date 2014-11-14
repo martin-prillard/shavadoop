@@ -28,6 +28,8 @@ public class Constant {
 	// Mode
 	public final static boolean MODE_DEBUG = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_DEBUG));
 	public final static boolean MODE_SCP_FILES = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_SCP_FILES));
+	public final static boolean MODE_ONE_KEY_ONE_FILE = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_ONE_KEY_ONE_FILE));
+	public final static String NAME_REDUCING_FILE_ALL = "ALL";
 	public final static String APP_DEBUG_TITLE = "-------------------------------------------------------";
 	
 	// Separator
@@ -39,9 +41,13 @@ public class Constant {
 	
 	// Socket
 	public final static String SEP_SOCKET_MESSAGE = ";";
-	public final static String END_SOCKET_MESSAGE = "END";
+	public final static String MESSAGE_TASKTRACKER_REQUEST = "ARE_YOU_ALIVE";
+	public final static String ANSWER_TASKTRACKER_REQUEST_OK = "OK";
+	public final static String ANSWER_TASKTRACKER_REQUEST_KO = "KO";
 	
 	// Job
-	public final static int THREAD_LIFETIME = Integer.parseInt(new PropReader().getPropValues(PropReader.THREAD_LIFETIME));
-	
+	public final static int THREAD_MAX_LIFETIME = Integer.parseInt(new PropReader().getPropValues(PropReader.THREAD_MAX_LIFETIME));
+	private final static int BYTE_SIZE = 131072;
+	public final static int BLOC_SIZE_MIN = Integer.parseInt(new PropReader().getPropValues(PropReader.BLOC_SIZE_MIN)) * BYTE_SIZE;
+	public final static int TASK_TRACKER_FREQ = Integer.parseInt(new PropReader().getPropValues(PropReader.TASK_TRACKER_FREQ));
 }

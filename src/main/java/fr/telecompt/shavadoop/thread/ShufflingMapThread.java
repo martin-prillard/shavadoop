@@ -1,6 +1,7 @@
-package fr.telecompt.shavadoop.slave.thread;
+package fr.telecompt.shavadoop.thread;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -8,9 +9,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FilenameUtils;
 
 import fr.telecompt.shavadoop.master.SSHManager;
-import fr.telecompt.shavadoop.master.thread.FileTransfert;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.Pair;
 
 public class ShufflingMapThread extends Thread {
 
@@ -57,13 +58,24 @@ public class ShufflingMapThread extends Thread {
 	    	}
 	    	es.shutdown();
 			try {
-				es.awaitTermination(Constant.THREAD_LIFETIME, TimeUnit.MINUTES);
-			} catch (InterruptedException e) {e.printStackTrace();}
+				es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				slave.setState(false);
+			}
     	}
-		 
-		//Lanch shuffling map method
-		String fileSortedMaps = slave.shufflingMaps(key, listFilesToTreat);
-		//Launch reduce method	
-		slave.mappingSortedMaps(key, fileSortedMaps);
+		
+		//if mode all in one file is enable (best performance)
+		if (!Constant.MODE_ONE_KEY_ONE_FILE) {
+			//Lanch shuffling map method
+			List<Pair> sortedMaps = slave.createSortedMaps(key, listFilesToTreat);
+			//Launch reduce method
+			slave.mappingSortedMapsInMemory(key, sortedMaps);
+		} else {
+			//Lanch shuffling map method
+			String fileSortedMaps = slave.shufflingMaps(key, listFilesToTreat);
+			//Launch reduce method
+			slave.mappingSortedMapsWithFiles(key, fileSortedMaps);
+		}
 	}
 }

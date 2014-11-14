@@ -3,10 +3,14 @@ package fr.telecompt.shavadoop.util;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -187,5 +191,117 @@ public class Util {
 		} catch (Exception e) {e.printStackTrace();} 
 		
 	}
+	
+	/**
+	 * get the number of line of the file
+	 * @param file
+	 * @return
+	 */
+	public static int getFileNumberLine(String file) {
+		int nbLine = 0;
+        FileReader fic;
+		try {
+			fic = new FileReader(new File(file));
+	        LineNumberReader  lnr = new LineNumberReader(fic);
+	        lnr.skip(Long.MAX_VALUE);
+	        nbLine = lnr.getLineNumber();
+	        lnr.close();
+		} catch (Exception e) {e.printStackTrace();}
+
+        return nbLine;
+	}
+	
+    /**
+     * Split a file by line
+     * @param file
+     * @param nbLineByHost
+     * @param restLineByHost
+     * @param filesToMap
+     */
+    public static List<String> splitByLineFile(String file, int nbLineByHost, int restLineByHost, int nbWorkerMappers) {
+    	List<String> filesToMap = new ArrayList<String>();
+    	
+        try {
+            String line = null;
+            int nbFile = 0;
+            
+        	// Content of the file
+            List<String> content = new ArrayList<String>();
+            FileReader fic = new FileReader(new File(file));
+            BufferedReader read = new BufferedReader(fic);
+            
+			while ((line = read.readLine()) != null) {
+			 // Add line by line to the content file
+			 content.add(line);
+			 // Write the complete file by block or if it's the end of the file
+			 if ((content.size() == nbLineByHost && nbFile < nbWorkerMappers - 1)
+					 || (content.size() == nbLineByHost + restLineByHost && nbFile == nbWorkerMappers - 1)) {
+			   	 //For each group of line, we write a new file
+			   	 ++nbFile;
+			   	 String fileToMap = Constant.PATH_F_SPLITING + nbFile;
+			   	 Util.writeFile(fileToMap, content);
+			   	 
+			   	 if (Constant.MODE_DEBUG) System.out.println("Input file splited in : " + fileToMap);
+			   	 		
+			   	 //We save names of theses files in a list
+			   	 filesToMap.add(fileToMap);
+			   	 // Reset
+			   	 content = new ArrayList<String>();
+			 }
+			}
+	        read.close();
+	        fic.close();
+		} catch (IOException e) {e.printStackTrace();}
+        return filesToMap;
+    }
+    
+    /**
+     * Split large file by bloc
+     * @param file
+     */
+    public static List<String> splitLargeFile(String file, int nbBlocByHost, int restBlocByHost, int nbWorkerMappers) {
+    	List<String> filesToMap = new ArrayList<String>();
+    	//TODO see number bloc
+    	File inputFile = new File(file);
+		FileInputStream inputStream;
+		FileOutputStream filePart;
+		int fileSize = (int) inputFile.length();
+		int nbFile = 0;
+		int read = 0;
+		int readLength = Constant.BLOC_SIZE_MIN;
+		
+		byte[] byteChunkPart;
+		
+		try {
+			inputStream = new FileInputStream(inputFile);
+			
+			while (fileSize > 0) {
+				if (fileSize <= Constant.BLOC_SIZE_MIN) {
+					readLength = fileSize;
+				}
+				
+				byteChunkPart = new byte[readLength];
+				read = inputStream.read(byteChunkPart, 0, readLength);
+				fileSize -= read;
+				assert (read == byteChunkPart.length);
+				
+				nbFile++;
+				String fileToMap = Constant.PATH_F_SPLITING + nbFile;
+				filePart = new FileOutputStream(new File(fileToMap));
+				filesToMap.add(fileToMap);
+				filePart.write(byteChunkPart);
+				filePart.flush();
+				filePart.close();
+				byteChunkPart = null;
+				filePart = null;
+			}
+			
+			inputStream.close();
+			
+		} catch (IOException exception) {
+			exception.printStackTrace();
+		}
+		return filesToMap;
+    }
 	
 }

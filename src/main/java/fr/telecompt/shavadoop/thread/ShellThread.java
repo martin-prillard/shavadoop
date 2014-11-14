@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.master.thread;
+package fr.telecompt.shavadoop.thread;
 
 import com.jcabi.ssh.Shell;
 
@@ -33,10 +33,12 @@ public class ShellThread extends Thread {
 		nbWorker = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
 	}
     
-	public String getCmdJar(String pathJar, String host, String method, String fileToTreat) {
+	public String getCmdJar(String pathJar, String host, String method, String fileToTreat, String idWorker) {
 		return "java -jar" 
 				+ Constant.SEP_WORD
 				+ pathJar
+				+ Constant.SEP_WORD
+				+ idWorker
 				+ Constant.SEP_WORD
 				+ host
 				+ Constant.SEP_WORD 

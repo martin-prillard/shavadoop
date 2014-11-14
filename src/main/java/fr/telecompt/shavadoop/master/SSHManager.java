@@ -15,7 +15,7 @@ import java.util.List;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
-import fr.telecompt.shavadoop.master.thread.FileTransfert;
+import fr.telecompt.shavadoop.thread.FileTransfert;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
@@ -53,9 +53,6 @@ public class SSHManager {
 			host = InetAddress.getLocalHost().getHostName();
 			ipAdress = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {e.printStackTrace();}
-
-		// get the list of hosts of the network
-		hostsNetwork = getHostFromFile();
 		
     	// get dsa key
 		dsaKey = getDsaKey(dsaFile);
@@ -72,6 +69,11 @@ public class SSHManager {
 	 */
 	public List<String> getHostAliveCores(int nbWorker) {
 		
+		if (hostsNetwork == null) {
+			// get the list of hosts of the network
+			hostsNetwork = getHostFromFile();
+		}
+	
 		if (Constant.MODE_DEBUG) System.out.println("Search " + nbWorker + " worker(s) alive...");
 		
 		List<String> hostAlive = new ArrayList<String>();

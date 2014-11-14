@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.master.thread;
+package fr.telecompt.shavadoop.thread;
 
 import java.io.InterruptedIOException;
 
@@ -13,8 +13,13 @@ import fr.telecompt.shavadoop.util.Constant;
 
 public class LaunchShufflingMap extends ShellThread {
 
-	public LaunchShufflingMap(SSHManager _sm, String _distantHost, String _shufflingDictionaryFile) {
+	private String hostMapper;
+	private String idWorker;
+	
+	public LaunchShufflingMap(SSHManager _sm, String _distantHost, String _shufflingDictionaryFile, String _hostMapper, String _idWorker) {
 		super(_sm, _distantHost, _shufflingDictionaryFile);
+		hostMapper = _hostMapper;
+		idWorker = _idWorker;
 	}
 	
     @Override
@@ -33,7 +38,7 @@ public class LaunchShufflingMap extends ShellThread {
 			// execute on the master's computer
 			if(local) {
 				// Run a java app in a separate system process
-				String cmd = getCmdJar(pathJar, null, method, fileToTreat);
+				String cmd = getCmdJar(pathJar, null, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
@@ -50,11 +55,12 @@ public class LaunchShufflingMap extends ShellThread {
 					fileToTreat = destFile;
 				}
 				
-				String cmd = getCmdJar(pathJar, null, method, fileToTreat);
+				String cmd = getCmdJar(pathJar, hostMapper, method, fileToTreat, idWorker);
 				
 				//Launch map process
-				new Shell.Plain(shell).exec(cmd);
+				String stdout = new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
+				if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + stdout); //TODO
 			}
 			
         } catch (InterruptedIOException e) { // if thread was interrupted

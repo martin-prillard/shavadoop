@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.master.thread;
+package fr.telecompt.shavadoop.thread;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -12,20 +12,22 @@ import java.util.Map.Entry;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
 
-public class ReceiveSlaveInfo extends Thread {
+public class ListenerDictionary extends Thread {
 
 	private ServerSocket ss;
 	private Map<String, HashSet<Pair>> dictionary;
 	private Map<String, HashSet<Pair>> partDictionary = new HashMap<String, HashSet<Pair>>();
 	
-	public ReceiveSlaveInfo(ServerSocket _ss, Map<String, HashSet<Pair>> _dictionary){
+	public ListenerDictionary(ServerSocket _ss, Map<String, HashSet<Pair>> _dictionary){
 		 ss = _ss;
 		 dictionary = _dictionary;
 	}
 	
 	public void run() {
+		Socket socket = null;
 		try {
-			Socket socket = ss.accept();
+			socket = ss.accept();
+			
 			// BufferedReader to read line by line
 			ObjectInputStream objectInput = new ObjectInputStream(socket.getInputStream()); 
 			
@@ -58,8 +60,13 @@ public class ReceiveSlaveInfo extends Thread {
 			
 			String hostClient = socket.getRemoteSocketAddress().toString();
 			if (Constant.MODE_DEBUG) System.out.println("Master received all dictionary elements from " + hostClient);
-
-		} catch (IOException e) {e.printStackTrace();}
+			
+		} catch (IOException e) {e.printStackTrace();
+		} finally {
+			try {
+				socket.close();
+			} catch (IOException e) {e.printStackTrace();}
+		}
 	}
 	
 	public void concatToHashMap(Map<String, HashSet<Pair>> map, String key, String hostOwner, String value) {
