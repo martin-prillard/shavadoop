@@ -27,21 +27,24 @@ public class StateSlave extends Thread {
 		hostMaster = _hostMaster;
 	}
 	
-	public void stopStateSlave() {
+	private void stopStateSlave() {
 		run = false;
 	}
 	
 	public void run() {
-		
-		while (run) {
-			try {
-				Socket socket = new Socket(hostMaster, portTaskTracker);
+		Socket socket = null;
+		try {
+			socket = new Socket(hostMaster, portTaskTracker);
+			while (run) {
 				waitRequestMaster(socket);
-				socket.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-				if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + e.getMessage()); //TODO
 			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				socket.close();
+			} catch (IOException e) {e.printStackTrace();}
 		}
 		
 	}
@@ -60,7 +63,7 @@ public class StateSlave extends Thread {
 	        if (request.equalsIgnoreCase(Constant.MESSAGE_TASKTRACKER_REQUEST)) {
 	        	// if the task is already finished
 		        if (slave.isTaskFinished()) {
-		        	sendTaskFinished();
+		        	sendTaskFinished(socket);
 		        } else {
 		        	// send the slave state
 		        	sendState(socket, slave.isState());
@@ -69,8 +72,6 @@ public class StateSlave extends Thread {
 	        
 		} catch (Exception e) {
 			e.printStackTrace();
-			if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + e.getMessage()); //TODO
-			run = false;
 		}
 	}
 	
@@ -90,33 +91,31 @@ public class StateSlave extends Thread {
             String stateString = null;
 	        if (state) {
 	        	stateString = Constant.ANSWER_TASKTRACKER_REQUEST_OK;
+				out.println(stateString);
+				out.flush();
 	        } else {
 	        	stateString = Constant.ANSWER_TASKTRACKER_REQUEST_KO;
+				out.println(stateString);
+				out.flush();
+	        	stopStateSlave();
 	        }
-			out.println(stateString);
-			out.flush();
 			
 		} catch (IOException e) {
 			e.printStackTrace();
-			if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + e.getMessage()); //TODO
-			run = false;
 		} 
 	}
 	
 	
-	public void sendTaskFinished() {
+	public void sendTaskFinished(Socket socket) {
 		// request slave state
 	    PrintWriter out = null;
 	    try {
-			Socket socket = new Socket(hostMaster, portTaskTracker);
 	        out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 			out.println(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED);
 			out.flush();
-			socket.close();
-			run = false;
+			stopStateSlave();
 		} catch (IOException e) {
 			e.printStackTrace();
-			if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + e.getMessage()); //TODO
 		} 
 	}
 	

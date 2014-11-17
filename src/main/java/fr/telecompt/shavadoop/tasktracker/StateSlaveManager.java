@@ -1,6 +1,5 @@
 package fr.telecompt.shavadoop.tasktracker;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -18,17 +17,16 @@ public class StateSlaveManager extends Thread {
 	private Thread thread;
 	private List<String> taskList;
 	private SSHManager sm;
-	private ExecutorService es;
 	private boolean taskFinished = false;
+	private boolean workerDied = false;
 	private String host;
 	private String idWorker;
 	private String taskName;
 	private String fileTask;
 	private String key;
 	
-	public StateSlaveManager(TaskTracker _ts, ExecutorService _es, ServerSocket _ss, SSHManager _sm, Thread _taskThread, List<String> _taskList){
+	public StateSlaveManager(TaskTracker _ts, ServerSocket _ss, SSHManager _sm, Thread _taskThread, List<String> _taskList){
 		ts = _ts;
-		es = _es;
 		ss = _ss;
 		sm = _sm;
 		thread = _taskThread;
@@ -54,28 +52,25 @@ public class StateSlaveManager extends Thread {
 			try {
 				socket = ss.accept();
 				
-				ExecutorService esStateSlaveManager = Executors.newCachedThreadPool();
-				
-//				new ListenerFinishedTaskSlave(this, socket); //TODO
-				
 				while(!taskFinished) {
-					// we trie to send request to the slave to know if it's alive or not
-			    	if (!taskFinished) {
-			    		esStateSlaveManager.execute(new CheckStateSlave(this, socket)); 
-			    	}
 					// wait between two requests check
 			    	try {
 			    	    Thread.sleep(Constant.TASK_TRACKER_FREQ);
 			    	} catch(InterruptedException ex) {
 			    	    Thread.currentThread().interrupt();
 			    	}
+					// we trie to send request to the slave to know if it's alive or not
+			    	if (!workerDied) {
+			    		ExecutorService esCheckTimer = Executors.newCachedThreadPool();
+			    		esCheckTimer.execute(new CheckStateSlave(this, socket)); 
+						esCheckTimer.shutdown();
+						try {
+							esCheckTimer.awaitTermination(Constant.TASK_TRACKER_ANSWER_TIMEOUT, TimeUnit.MILLISECONDS);
+						} catch (InterruptedException e) {e.printStackTrace();}
+			    	} else {
+			    		break;
+			    	}
 				}
-				
-				esStateSlaveManager.shutdown();
-				
-				try {
-					esStateSlaveManager.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
-				} catch (InterruptedException e) {e.printStackTrace();}
 				
 				socket.close();
 				
@@ -89,31 +84,29 @@ public class StateSlaveManager extends Thread {
 	 * @param thread
 	 */
 	public void caseWorkerTaskIsFinished() {
-		taskFinished = true;
 		ts.removeTask(thread);
+		taskFinished = true;
 	}
 	
 	/**
 	 * In the case where the worker is dead
 	 */
 	public void caseWorkerDied() {
+		workerDied = true;
 		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker " + idWorker + " (" + host + ") died");
-		
 		String hostFail = host;
 		
 		// we get an other worker
-//		List<String> hostWorker = sm.getHostAliveCores(1);
-//		if (hostWorker.size() == 1) { //TODO pour test
-//			host = hostWorker.get(0);
-//		} else {
+		List<String> hostWorker = sm.getHostAliveCores(1, true);
+		if (hostWorker.size() == 1) {
+			host = hostWorker.get(0);
+		} else {
 			// it's the master
 			host = sm.getHostFull();
-//		}
-		// we relaunch the task on an other worker
-		if (!es.isTerminated()) {
-			if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : redirect " + taskName + " from worker " + idWorker + " (" + hostFail + ") task on " + host); 
-			ts.relaunchTask(thread, host, idWorker, taskName, fileTask, key);
 		}
+		// we relaunch the task on an other worker
+		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : redirect " + taskName + " from worker " + idWorker + " (" + hostFail + ") task on " + host); 
+		ts.relaunchTask(thread, host, idWorker, taskName, fileTask, key);
 	}
 
 	

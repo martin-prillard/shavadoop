@@ -72,9 +72,11 @@ public class Slave
 	    		break;
 	    		
 	    	case SHUFFLING_MAP_FUNCTION:
+	        	
 	    		// launch shuffling maps process
 	    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
-	    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker,100);
+	    		int threadQueueMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_QUEUE_MAX_BY_WORKER));
+	    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
 	    		
 	    		try {
     			    InputStream ips = new FileInputStream(fileToTreat); 
@@ -112,10 +114,6 @@ public class Slave
 	    			System.out.println("No shuffling dictionary file");
 	    			state = false;
 	    		}
-	    		
-	    		break;
-	    	default:
-	    		System.out.println("Function name unknown");
 	    		break;
     	}
     	
@@ -123,10 +121,7 @@ public class Slave
     	if(state) {
     		taskFinished = true;
     	}
-    	
-    	// stop the thread state slave
-    	sst.stopStateSlave();
-    	
+
     }
     
     

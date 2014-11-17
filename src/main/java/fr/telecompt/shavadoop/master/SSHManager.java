@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.jcabi.ssh.SSH;
@@ -24,7 +25,6 @@ public class SSHManager {
 	
 	private List<String> hostsNetwork;
 	private int shellPort = 0;
-	private int cores = Runtime.getRuntime().availableProcessors();
 	private String fileIpAdress = null;
 	private String dsaFile = null;
 	private String dsaKey = null;
@@ -67,26 +67,16 @@ public class SSHManager {
 	 * @param dsaKey
 	 * @return
 	 */
-	public List<String> getHostAliveCores(int nbWorker) {
+	public List<String> getHostAliveCores(int nbWorker, boolean random) {
 		
 		if (hostsNetwork == null) {
 			// get the list of hosts of the network
-			hostsNetwork = getHostFromFile();
+			hostsNetwork = getHostFromFile(random);
 		}
 	
 		if (Constant.MODE_DEBUG) System.out.println("Search " + nbWorker + " worker(s) alive...");
 		
 		List<String> hostAlive = new ArrayList<String>();
-		
-		// check first for this computer : the master is the worker
-		for (int i = 0; i < cores; i++) {
-			// the number of worker is the number of cores of this computer
-			if (hostAlive.size() < nbWorker) {
-				hostAlive.add(hostFull);
-			} else {
-				break;
-			}
-		}
 		
 		String destFile = Constant.PATH_SLAVE + Constant.APP_JAR;
 		File jar = new File(destFile);
@@ -169,23 +159,33 @@ public class SSHManager {
      * @param fileIpAdress
      * @return
      */
-    public List<String> getHostFromFile() {
+    public List<String> getHostFromFile(boolean random) {
     	List<String> hostnameMappers = new ArrayList<String>();
 
-		 try {
-             FileReader fic = new FileReader(fileIpAdress);
-             BufferedReader read = new BufferedReader(fic);
-             String line = null;
+		// check first for this computer : the master is the worker
+    	int cores = Runtime.getRuntime().availableProcessors();
+		for (int i = 0; i < cores; i++) {
+			hostnameMappers.add(hostFull);
+		}
+		
+		try {
+            FileReader fic = new FileReader(fileIpAdress);
+            BufferedReader read = new BufferedReader(fic);
+            String line = null;
+            
+            while ((line = read.readLine()) != null) {
+            	hostnameMappers.add(line);
+            }
+            fic.close();
+            read.close();   
              
-             while ((line = read.readLine()) != null) {
-            	 hostnameMappers.add(line);
-             }
-             fic.close();
-             read.close();   
-             
-         } catch (IOException e) {
-             e.printStackTrace();
-         }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+		 
+		if (random) {
+			Collections.shuffle(hostnameMappers);
+		}
 		 
     	return hostnameMappers;
     }

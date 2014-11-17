@@ -89,7 +89,7 @@ public class Master
     	
 		// get workers
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
-		List<String> workersCores = sm.getHostAliveCores(nbWorkerMax);
+		List<String> workersCores = sm.getHostAliveCores(nbWorkerMax, false);
 		if (Constant.MODE_DEBUG) System.out.println("Workers core : " + workersCores); 
 		
     	if (Constant.MODE_DEBUG) System.out.println("Shavadoop workflow on : " + fileInputCleaned);
@@ -322,9 +322,9 @@ public class Master
     	// Get the list of file
     	Set<String> listFiles = new HashSet<String>();
     	 
-    	ExecutorService es = null;
+    	ExecutorService esModeScp = null;
     	if (Constant.MODE_SCP_FILES) {
-    		es = Executors.newCachedThreadPool();
+    		esModeScp = Executors.newCachedThreadPool();
     	}
     	
     	for (Entry<String, String> e : dictionaryReducing.entrySet()) {
@@ -345,7 +345,7 @@ public class Master
 					// if the file doesn't exist on this computer
 					File f = new File(destFile);
 					if (!f.exists()) {
-						es.execute(new FileTransfert(sm, worker, nameFileToMerge, destFile));
+						esModeScp.execute(new FileTransfert(sm, worker, nameFileToMerge, destFile));
 			    		nameFileToMerge = destFile;
 					}
     			}
@@ -355,9 +355,9 @@ public class Master
     	}
 
     	if (Constant.MODE_SCP_FILES) {
-	    	es.shutdown();
+	    	esModeScp.shutdown();
 			try {
-				es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+				esModeScp.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 			} catch (InterruptedException e) {e.printStackTrace();}
     	}
 		

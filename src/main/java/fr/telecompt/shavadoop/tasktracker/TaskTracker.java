@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,28 +36,41 @@ public class TaskTracker extends Thread {
 	}
 	
 	/**
-	 * Add worker
+	 * Add worker's task to the task tracker
+	 * @param thread
 	 * @param host
+	 * @param idWorker
 	 * @param taskName
 	 * @param fileToTreat
 	 * @param key
+	 * @return taskInfos
 	 */
 	public void addTask(Thread thread, String host, String idWorker, String taskName, String fileToTreat, String key) {
+		List<String> taskInfos = getTaskInfos(host, idWorker, taskName, fileToTreat, key);
+		taskHistory.put(thread, taskInfos);
+		esTaskTracker.execute(new StateSlaveManager(this, ss, sm, thread, taskInfos));
+	}
+	
+	private List<String> getTaskInfos(String host, String idWorker, String taskName, String fileToTreat, String key) {
 		List<String> taskInfos = new ArrayList<String>();
 		taskInfos.add(host);
 		taskInfos.add(idWorker);
 		taskInfos.add(taskName);
 		taskInfos.add(fileToTreat);
 		taskInfos.add(key);
-		taskHistory.put(thread, taskInfos);
-		esTaskTracker.execute(new StateSlaveManager(this, es, ss, sm, thread, taskInfos));
+		return taskInfos;
 	}
 	
+	/**
+	 * Remove a worker's task of the task tracker
+	 * @param thread
+	 */
 	public void removeTask(Thread thread) {
 		taskHistory.remove(thread);
 		// if all thread's task are finished
 		if (taskHistory.isEmpty()){
 			esTaskTracker.shutdown();
+			es.shutdown();
 		} 
 	}
 	
@@ -77,11 +89,6 @@ public class TaskTracker extends Thread {
 			ss = new ServerSocket(portTaskTracker);
 			ss.setReuseAddress(true);
 		} catch (IOException e) {e.printStackTrace();}
-//		// check the slaves'state
-//		for (Entry<Thread, List<String>> e : taskHistory.entrySet()) {
-//			// launch process to check the state slave
-//			esTaskTracker.execute(new StateSlaveManager(this, es, ss, sm, e.getKey(), e.getValue()));
-//		}
 		
 		try {
 			esTaskTracker.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
@@ -114,13 +121,6 @@ public class TaskTracker extends Thread {
 		
 		// add this new task
 		addTask(newTask, newHost, idWorker, taskName, fileTask, key);
-		List<String> taskInfos = new ArrayList<String>();
-		taskInfos.add(newHost);
-		taskInfos.add(idWorker);
-		taskInfos.add(taskName);
-		taskInfos.add(fileTask);
-		taskInfos.add(key);
-		esTaskTracker.execute(new StateSlaveManager(this, es, ss, sm, thread, taskInfos));
 		//interrupt the old thread
 		thread.interrupt();
 		//remove from the map

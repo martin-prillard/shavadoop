@@ -44,10 +44,10 @@ public class Constant {
 	public final static String ANSWER_TASKTRACKER_REQUEST_OK = "OK";
 	public final static String ANSWER_TASKTRACKER_REQUEST_KO = "KO";
 	public final static String ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED = "TASK_FINISHED";
-	
 	// Job
 	public final static int THREAD_MAX_LIFETIME = Integer.parseInt(new PropReader().getPropValues(PropReader.THREAD_MAX_LIFETIME));
 	private final static int BYTE_SIZE = 1000000;
 	public final static int BLOC_SIZE_MIN = Integer.parseInt(new PropReader().getPropValues(PropReader.BLOC_SIZE_MIN)) * BYTE_SIZE;
 	public final static int TASK_TRACKER_FREQ = Integer.parseInt(new PropReader().getPropValues(PropReader.TASK_TRACKER_FREQ));
+	public final static int TASK_TRACKER_ANSWER_TIMEOUT = Integer.parseInt(new PropReader().getPropValues(PropReader.TASK_TRACKER_ANSWER_TIMEOUT));
 }

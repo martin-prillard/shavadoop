@@ -21,6 +21,9 @@ public class CheckStateSlave extends Thread {
 	
 	public void run() {
 		if (!stateSlaveManager.getTaskFinished()) {
+			
+			String hostClient = socket.getRemoteSocketAddress().toString();
+			
 			try {
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));	
 				
@@ -29,16 +32,22 @@ public class CheckStateSlave extends Thread {
 				
 		        // get the state slave
 				String slaveAliveString = in.readLine();
-		        System.out.println(">>>Check : " + slaveAliveString); //TODO
+				
+				if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER receive slave's state : " + slaveAliveString + " (" + hostClient + ")");
 		        
-		        if (slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED)) {
+		        if (slaveAliveString != null && slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED)) {
 		        	stateSlaveManager.caseWorkerTaskIsFinished();
 		        // else get the slave's state
-		        } else if (slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_KO)) {
+		        } else if (slaveAliveString == null 
+		        		|| slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_KO)) {
 		        	stateSlaveManager.caseWorkerDied();
 		        }
 		        
-			} catch (IOException e) {e.printStackTrace();} 
+			} catch (IOException e) {
+				// slave too long to answer
+				if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER slave " + hostClient + " not respond...");
+				stateSlaveManager.caseWorkerDied();
+			} 
 		}
 
 	}

@@ -15,6 +15,7 @@ public class PropReader {
 	public static final String PORT_SHELL = "port_shell";
 	public static final String WORKER_MAX = "worker_max";
 	public static final String THREAD_MAX_BY_WORKER = "thread_max_by_worker";
+	public static final String THREAD_QUEUE_MAX_BY_WORKER = "thread_queue_max_by_worker";
 	public static final String THREAD_MAX_LIFETIME = "thread_max_lifetime";
 	public static final String PATH_MASTER = "path_master";
 	public static final String PATH_SLAVE = "path_slave";
@@ -23,6 +24,7 @@ public class PropReader {
 	public static final String MODE_SCP_FILES = "mode_scp_files";
 	public static final String BLOC_SIZE_MIN = "bloc_size_min";
 	public static final String TASK_TRACKER_FREQ = "task_tracker_freq";
+	public static final String TASK_TRACKER_ANSWER_TIMEOUT = "task_tracker_answer_timeout";
 	
 	public String getPropValues(String key) {
 		 

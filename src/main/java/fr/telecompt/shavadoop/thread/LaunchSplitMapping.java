@@ -56,7 +56,6 @@ public class LaunchSplitMapping extends ShellThread {
 				// launch map process
 				String stdout = new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
-				if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + stdout); //TODO
 			}
 	    } catch (InterruptedIOException e) { // if thread was interrupted
 	        Thread.currentThread().interrupt();

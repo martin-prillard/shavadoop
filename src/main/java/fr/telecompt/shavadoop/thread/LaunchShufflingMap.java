@@ -31,14 +31,13 @@ public class LaunchShufflingMap extends ShellThread {
 	public void run() {
 		
         try {
-
 			String pathJar = Constant.PATH_JAR;
 			String method = Slave.SHUFFLING_MAP_FUNCTION;
 			
 			// execute on the master's computer
 			if(local) {
 				// Run a java app in a separate system process
-				String cmd = getCmdJar(pathJar, null, method, fileToTreat, idWorker);
+				String cmd = getCmdJar(pathJar, hostMapper, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
@@ -58,9 +57,8 @@ public class LaunchShufflingMap extends ShellThread {
 				String cmd = getCmdJar(pathJar, hostMapper, method, fileToTreat, idWorker);
 				
 				//Launch map process
-				String stdout = new Shell.Plain(shell).exec(cmd);
+				new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
-				if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + stdout); //TODO
 			}
 			
         } catch (InterruptedIOException e) { // if thread was interrupted
