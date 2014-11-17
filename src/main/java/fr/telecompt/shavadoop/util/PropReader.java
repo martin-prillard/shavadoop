@@ -1,6 +1,5 @@
 package fr.telecompt.shavadoop.util;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -21,7 +20,6 @@ public class PropReader {
 	public static final String PATH_SLAVE = "path_slave";
 	public static final String NETWORK_IP_REGEX = "network_ip_regex";
 	public static final String MODE_DEBUG = "mode_debug";
-	public static final String MODE_ONE_KEY_ONE_FILE = "mode_one_key_one_file";
 	public static final String MODE_SCP_FILES = "mode_scp_files";
 	public static final String BLOC_SIZE_MIN = "bloc_size_min";
 	public static final String TASK_TRACKER_FREQ = "task_tracker_freq";

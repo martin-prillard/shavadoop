@@ -4,34 +4,35 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.thread.LaunchShufflingMap;
 import fr.telecompt.shavadoop.thread.LaunchSplitMapping;
 import fr.telecompt.shavadoop.util.Constant;
-import fr.telecompt.shavadoop.util.Pair;
 
 public class TaskTracker extends Thread {
 
 	private ExecutorService es;
+	private ExecutorService esTaskTracker;
 	private String hostMaster;
 	private Map<Thread, List<String>> taskHistory = new HashMap<Thread, List<String>>();
 	private SSHManager sm;
-	private Map<String, Pair> dictionaryReducing = null;
+	private Map<String, String> dictionaryReducing = null;
 	private int portTaskTracker;
-	private Iterator<Entry<Thread, List<String>>> it;
+	private ServerSocket ss = null;
 	
-	public TaskTracker(SSHManager _sm, ExecutorService _es, int _portTaskTracker, Map<String, Pair> _dictionaryReducing) {
+	public TaskTracker(SSHManager _sm, ExecutorService _es, int _portTaskTracker, Map<String, String> _dictionaryReducing) {
 		sm = _sm;
+		es = _es;
 		hostMaster = sm.getHost();
 		portTaskTracker = _portTaskTracker;
-		es = _es;
 		dictionaryReducing = _dictionaryReducing;
 	}
 	
@@ -50,73 +51,53 @@ public class TaskTracker extends Thread {
 		taskInfos.add(fileToTreat);
 		taskInfos.add(key);
 		taskHistory.put(thread, taskInfos);
-		it = taskHistory.entrySet().iterator();
+		esTaskTracker.execute(new StateSlaveManager(this, es, ss, sm, thread, taskInfos));
 	}
 	
 	public void removeTask(Thread thread) {
 		taskHistory.remove(thread);
-		it = taskHistory.entrySet().iterator();
+		// if all thread's task are finished
+		if (taskHistory.isEmpty()){
+			esTaskTracker.shutdown();
+		} 
 	}
 	
 	public void run() {
+		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : START");
 		check();
+		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : END");
 	}
 	
 	/**
 	 * Check if the workers are alive
 	 */
 	public void check() {
-		
-		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : START");
-		
-		it = taskHistory.entrySet().iterator();
-		ServerSocket ss = null;
-		
-		
+		esTaskTracker = Executors.newCachedThreadPool();
 		try {
 			ss = new ServerSocket(portTaskTracker);
 			ss.setReuseAddress(true);
 		} catch (IOException e) {e.printStackTrace();}
+//		// check the slaves'state
+//		for (Entry<Thread, List<String>> e : taskHistory.entrySet()) {
+//			// launch process to check the state slave
+//			esTaskTracker.execute(new StateSlaveManager(this, es, ss, sm, e.getKey(), e.getValue()));
+//		}
 		
-		while (!es.isTerminated()) {
-			
-			if (!es.isTerminated()) {
-				if(it.hasNext()) {
-					Map.Entry<Thread, List<String>> task = (Map.Entry<Thread, List<String>>)it.next();
-					// launch process to check the state slave
-					String host = task.getValue().get(0);
-					// if it's not the local worker
-					if (!sm.isLocal(host)) {
-						new CheckSlaveState(this, es, ss, sm, task).start();
-					} else {
-						if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : " + host + " (local) alive"); //TODO supr
-					}
-				} else {
-					// reset iterator
-					it = taskHistory.entrySet().iterator();
-				}
-				// wait before check an other worker
-		    	try {
-		    	    Thread.sleep(Constant.TASK_TRACKER_FREQ);
-		    	} catch(InterruptedException ex) {
-		    	    Thread.currentThread().interrupt();
-		    	}
-			}
-		}
+		try {
+			esTaskTracker.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {e.printStackTrace();}
 		
 		try {
 			ss.close();
 		} catch (IOException e) {e.printStackTrace();}
 		
-		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : END");
 	}
 	
 	public void relaunchTask(Thread thread, String newHost, String idWorker, String taskName, String fileTask, String key) {
 		// if needed, modify the dictionary file
 		if (dictionaryReducing != null) {
 			// erase old information of the worker failed
-			Pair newHostFull = new Pair(newHost, idWorker);
-			dictionaryReducing.put(key, newHostFull);
+			dictionaryReducing.put(idWorker, newHost);
 		}
 		// launch the task
 		Thread newTask = null;
@@ -133,10 +114,15 @@ public class TaskTracker extends Thread {
 		
 		// add this new task
 		addTask(newTask, newHost, idWorker, taskName, fileTask, key);
-		
+		List<String> taskInfos = new ArrayList<String>();
+		taskInfos.add(newHost);
+		taskInfos.add(idWorker);
+		taskInfos.add(taskName);
+		taskInfos.add(fileTask);
+		taskInfos.add(key);
+		esTaskTracker.execute(new StateSlaveManager(this, es, ss, sm, thread, taskInfos));
 		//interrupt the old thread
 		thread.interrupt();
-		
 		//remove from the map
 		removeTask(thread);
 	}

@@ -65,17 +65,10 @@ public class ShufflingMapThread extends Thread {
 			}
     	}
 		
-		//if mode all in one file is enable (best performance)
-		if (!Constant.MODE_ONE_KEY_ONE_FILE) {
-			//Lanch shuffling map method
-			List<Pair> sortedMaps = slave.createSortedMaps(key, listFilesToTreat);
-			//Launch reduce method
-			slave.mappingSortedMapsInMemory(key, sortedMaps);
-		} else {
-			//Lanch shuffling map method
-			String fileSortedMaps = slave.shufflingMaps(key, listFilesToTreat);
-			//Launch reduce method
-			slave.mappingSortedMapsWithFiles(key, fileSortedMaps);
-		}
+		//Lanch shuffling map method
+		List<Pair> sortedMaps = slave.shufflingMaps(key, listFilesToTreat);
+		//Launch reduce method
+		slave.mappingSortedMapsInMemory(key, sortedMaps);
+
 	}
 }

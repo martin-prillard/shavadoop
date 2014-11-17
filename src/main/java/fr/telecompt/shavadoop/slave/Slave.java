@@ -34,6 +34,7 @@ public class Slave
 	public final static String SHUFFLING_MAP_FUNCTION = "shuffling_map_function";
 	private PropReader prop = new PropReader();
 	
+	private boolean taskFinished = false;
 	private String functionName;
 	private String hostMaster;
 	private String fileToTreat;
@@ -100,17 +101,12 @@ public class Slave
 		    			state = false;
 		    		}
 		    		
-		    		//if mode all in one file is enable (best performance)
-		    		if (!Constant.MODE_ONE_KEY_ONE_FILE) {
-		    			String fileToAssemble = Constant.PATH_F_REDUCING 
-		           			 + Constant.SEP_NAME_FILE
-		           			 + Constant.NAME_REDUCING_FILE_ALL
-		           			 + Constant.SEP_NAME_FILE 
-		           			 + sm.getHostFull()
-		           			 + Constant.SEP_NAME_FILE 
-		           			 + idWorker;
-		    			Util.writeFile(fileToAssemble, finalMapsInMemory);
-		    		}
+	    			String fileToAssemble = Constant.PATH_F_REDUCING 
+	           			 + Constant.SEP_NAME_FILE
+	           			 + sm.getHostFull()
+	           			 + Constant.SEP_NAME_FILE 
+	           			 + idWorker;
+	    			Util.writeFile(fileToAssemble, finalMapsInMemory);
 		    		
 	    		} catch (IOException e) {
 	    			System.out.println("No shuffling dictionary file");
@@ -121,6 +117,11 @@ public class Slave
 	    	default:
 	    		System.out.println("Function name unknown");
 	    		break;
+    	}
+    	
+    	// if no fail
+    	if(state) {
+    		taskFinished = true;
     	}
     	
     	// stop the thread state slave
@@ -212,36 +213,6 @@ public class Slave
         socket.close();
     }
     
-
-    /**
-     * Group and sort maps results by key
-     * @param key
-     * @param shufflingDictionaryLine
-     * @return
-     */
-    public String shufflingMaps(String key, String[] listFiles) {
-    	// Final file to reduce
-    	String fileToReduce = null;
-    	
-    	// Concat data of each files in one
-		 try {
-             List<Pair> sortedMaps = createSortedMaps(key, listFiles);
-             
-        	 fileToReduce = Constant.PATH_F_SHUFFLING 
-        			 + Constant.SEP_NAME_FILE 
-        			 + key
-        			 + Constant.SEP_NAME_FILE 
-        			 + sm.getHostFull()
-        			 + Constant.SEP_NAME_FILE 
-           			 + idWorker;
-        	 Util.writeFileFromPair(fileToReduce, sortedMaps);
-         	
-         } catch (Exception e) {
-             e.printStackTrace();
-             state = false;
-         }
-    	return fileToReduce;
-    }
     
     /**
      * Group and sort maps results by key
@@ -249,7 +220,7 @@ public class Slave
      * @param shufflingDictionaryLine
      * @return
      */
-    public List<Pair> createSortedMaps(String key, String[] listFiles) {
+    public List<Pair> shufflingMaps(String key, String[] listFiles) {
     	List<Pair> sortedMaps = new ArrayList<Pair>();
     	
     	// Concat data of each files in one list pair
@@ -279,47 +250,7 @@ public class Slave
          }
     	return sortedMaps;
     }
-    
-
-    /**
-     * Reduce method with files
-     * @param fileToReduce
-     */
-    public void mappingSortedMapsWithFiles(String key, String fileToReduce) {
-		 try {
-             FileReader fic = new FileReader(fileToReduce);
-             BufferedReader read = new BufferedReader(fic);
-             String line = null;
-
-             Map<String, Integer> finalMaps = new HashMap<String, Integer>();
-             
-             while ((line = read.readLine()) != null) {
-            	String words[] = line.split(Constant.SEP_CONTAINS_FILE);
-         		//Increment counter value for this word
-         		if (finalMaps.containsKey(words[0])) {
-         			finalMaps.put(words[0], finalMaps.get(words[0]) + Integer.parseInt(words[1]));
-         		} else {
-         			finalMaps.put(words[0], Integer.parseInt(words[1]));
-         		}
-             }
-            
-        	 String fileToAssemble = Constant.PATH_F_REDUCING 
-        			 + Constant.SEP_NAME_FILE
-        			 + key
-        			 + Constant.SEP_NAME_FILE 
-        			 + sm.getHostFull()
-        			 + Constant.SEP_NAME_FILE 
-           			 + idWorker;
-        	 Util.writeFile(fileToAssemble, finalMaps);
-        	 
-             fic.close();
-             read.close();   
-    		 
-         } catch (Exception e) {
-             e.printStackTrace();
-             state = false;
-         }
-    }
+   
     
     /**
      * Reduce method in-memory
@@ -357,5 +288,9 @@ public class Slave
 	public void setState(boolean state) {
 		this.state = state;
 	}
-    
+
+	public boolean isTaskFinished() {
+		return taskFinished;
+	}
+	
 }

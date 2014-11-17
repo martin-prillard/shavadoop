@@ -19,6 +19,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
@@ -120,6 +122,19 @@ public class Util {
 		try {
 			FileUtils.cleanDirectory(file);
 		} catch (IOException e) {e.printStackTrace();}
+	}
+	
+	public static void initializeResDirectory(String pathRepoRes) {
+		Pattern paternRootPath = Pattern.compile(Constant.PATH_ROOT);
+		Matcher matcherRootPath = paternRootPath.matcher(pathRepoRes);
+		// clean directory
+		if (!matcherRootPath.find()) {
+			createDirectory(new File(pathRepoRes));
+			cleanDirectory(new File(pathRepoRes)); 
+			if (Constant.MODE_DEBUG) System.out.println(pathRepoRes + " directory cleaned");
+		} else {
+			if (Constant.MODE_DEBUG) System.out.println(pathRepoRes + " is the root path ! ");
+		}
 	}
 	
 	public static String pairToString(Set<Pair> input) {
@@ -261,7 +276,7 @@ public class Util {
      */
     public static List<String> splitLargeFile(String file, int nbBlocByHost, int restBlocByHost, int nbWorkerMappers) {
     	List<String> filesToMap = new ArrayList<String>();
-    	//TODO see number bloc
+    	//TODO couper a la fin des lignes, serialization ?
     	File inputFile = new File(file);
 		FileInputStream inputStream;
 		FileOutputStream filePart;

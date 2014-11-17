@@ -58,8 +58,13 @@ public class StateSlave extends Thread {
 	        String request = in.readLine();
 	        
 	        if (request.equalsIgnoreCase(Constant.MESSAGE_TASKTRACKER_REQUEST)) {
-	        	// send the slave state
-	        	sendState(socket, slave.isState());
+	        	// if the task is already finished
+		        if (slave.isTaskFinished()) {
+		        	sendTaskFinished();
+		        } else {
+		        	// send the slave state
+		        	sendState(socket, slave.isState());
+		        }
 	        }
 	        
 		} catch (Exception e) {
@@ -95,6 +100,23 @@ public class StateSlave extends Thread {
 			e.printStackTrace();
 			if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + e.getMessage()); //TODO
 			run = false;
+		} 
+	}
+	
+	
+	public void sendTaskFinished() {
+		// request slave state
+	    PrintWriter out = null;
+	    try {
+			Socket socket = new Socket(hostMaster, portTaskTracker);
+	        out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+			out.println(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED);
+			out.flush();
+			socket.close();
+			run = false;
+		} catch (IOException e) {
+			e.printStackTrace();
+			if (Constant.MODE_DEBUG) System.out.println("Stdout slave : " + e.getMessage()); //TODO
 		} 
 	}
 	

@@ -25,7 +25,7 @@ import fr.telecompt.shavadoop.tasktracker.TaskTracker;
 import fr.telecompt.shavadoop.thread.FileTransfert;
 import fr.telecompt.shavadoop.thread.LaunchShufflingMap;
 import fr.telecompt.shavadoop.thread.LaunchSplitMapping;
-import fr.telecompt.shavadoop.thread.ListenerDictionaryManager;
+import fr.telecompt.shavadoop.thread.DictionaryManager;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
 import fr.telecompt.shavadoop.util.PropReader;
@@ -47,8 +47,8 @@ public class Master
 	private double startTime;
 	
 	// dictionary
-	Map<String, HashSet<Pair>> dictionaryMapping; // water, (lena.enst.fr, /tmp/UM_lena.enst.fr) -> to to shuffling
-	Map<String, Pair> dictionaryReducing; // water, (lena.enst.fr, 1) -> to get all RM files
+	Map<String, HashSet<Pair>> dictionaryMapping; // key, (host, UM file) -> to to shuffling
+	Map<String, String> dictionaryReducing; // idWorker, host -> to get all RM files
 	
 
 	public Master(SSHManager _sm){
@@ -71,15 +71,13 @@ public class Master
     	portTaskTracker = Integer.parseInt(prop.getPropValues(PropReader.PORT_TASK_TRACKER));
 		if (Constant.MODE_DEBUG) System.out.println("Variables initialized");
 		
-		// clean directory
-		Util.createDirectory(new File(Constant.PATH_REPO_RES));
-		Util.cleanDirectory(new File(Constant.PATH_REPO_RES)); 
-		if (Constant.MODE_DEBUG) System.out.println(Constant.PATH_REPO_RES + " directory cleaned");
+		// clean res directory
+		Util.initializeResDirectory(Constant.PATH_REPO_RES);
 		
 		// clean the input text
 		fileInputCleaned = Constant.PATH_F_INPUT_CLEANED;
 		Util.cleanText(fileToTreat, fileInputCleaned);
-		if (Constant.MODE_DEBUG) System.out.println("Input file cleaned");
+		if (Constant.MODE_DEBUG) System.out.println("file " + fileInputCleaned + " cleaned");
 		
 	}
 	
@@ -142,7 +140,7 @@ public class Master
         	 totalBloc = Util.getFileNumberLine(fileToTreat);
          // split by bloc
          } else {
-        	 totalBloc = (int) (sizeFileToTreat / Constant.BLOC_SIZE_MIN);
+        	 totalBloc = (int) Math.ceil((double) sizeFileToTreat / (double) Constant.BLOC_SIZE_MIN);
          }
          
          // if too more worker available for map process
@@ -182,6 +180,7 @@ public class Master
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
 		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, null);
+		es.execute(ts);
 		
 		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
 		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
@@ -189,14 +188,14 @@ public class Master
 		// dictionary
     	Map<String, HashSet<Pair>> dictionaryMapping = new HashMap<String, HashSet<Pair>>();
     	// listener to get part dictionary from the worker mappers
-    	es.execute(new ListenerDictionaryManager(portMasterDictionary, nbWorkerMappers, dictionaryMapping));
+    	es.execute(new DictionaryManager(portMasterDictionary, nbWorkerMappers, dictionaryMapping));
     	
     	int idWorkerMapperCore = 1;
     	
 		//For each files to map
     	for (int i = 0; i < filesToMap.size(); i++) {
 	    	try {
-	    	    Thread.sleep(250); // down the speed, use to not interfer with the listener slave thread
+	    	    Thread.sleep(100); // down the speed, use to not interfer with the listener slave thread
 	    	} catch(InterruptedException ex) {
 	    	    Thread.currentThread().interrupt();
 	    	}
@@ -205,10 +204,9 @@ public class Master
 			ts.addTask(smt, workersMapperCores.get(i), Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
 			++idWorkerMapperCore;
     	}
-    	
+		
     	if (Constant.MODE_DEBUG) System.out.println("Waitting the end of maps process...");
     	
-    	ts.start();
     	
 		//Wait while all the threads are not finished yet
 		try {
@@ -224,13 +222,14 @@ public class Master
      * @param dictionary
      * @throws IOException 
      */
-    public Map<String, Pair> launchShufflingMapThreads(List<String> workersCores) throws IOException {
+    public Map<String, String> launchShufflingMapThreads(List<String> workersCores) throws IOException {
 		// Host who have a reduce file to assemble
-    	Map<String, Pair> dictionaryReducing = new HashMap<String, Pair>();
+    	Map<String, String> dictionaryReducing = new HashMap<String, String>();
 		
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
 		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, dictionaryReducing);
+		es.execute(ts);
 		
 		int idWorkerReducerCore = 0;
 		String workerReducer = workersCores.get(idWorkerReducerCore);
@@ -271,8 +270,7 @@ public class Master
 			    		+ Constant.SEP_CONTAINS_FILE
 			    		+ Util.pairToString(e.getValue())); 
 
-			Pair hostFull = new Pair(workerReducer, Integer.toString(idWorkerReducerCore));
-			dictionaryReducing.put(e.getKey(), hostFull);
+			dictionaryReducing.put(Integer.toString(idWorkerReducerCore), workerReducer);
 			++cptLightThread;
 			
 			if ((cptLightThread == nbThreadByCore && idWorkerReducerCore < workersReducer - 1)
@@ -299,14 +297,12 @@ public class Master
 				}
        	 	}
 		}
-		
+
 		if (Constant.MODE_DEBUG) System.out.println("Waitting the end of shuffling maps process...");
 		
 		fw.close();
 		bw.close();
 		write.close();
-		
-		ts.start();
 		
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
@@ -331,21 +327,11 @@ public class Master
     		es = Executors.newCachedThreadPool();
     	}
     	
-    	for (Entry<String, Pair> e : dictionaryReducing.entrySet()) {
+    	for (Entry<String, String> e : dictionaryReducing.entrySet()) {
     		
-    		String key = null;
-    		//if mode all in one file is enable (best performance)
-    		if (!Constant.MODE_ONE_KEY_ONE_FILE) {
-    			key = Constant.NAME_REDUCING_FILE_ALL;
-    		} else {
-    			key = e.getKey();
-    		}
-    		
-    		String worker = e.getValue().getVal1();
-    		String idWorker = e.getValue().getVal2();
+    		String idWorker = e.getKey();
+    		String worker = e.getValue();
     		String nameFileToMerge = Constant.PATH_F_REDUCING 
-    				+ Constant.SEP_NAME_FILE 
-    				+ key // keyword
     				+ Constant.SEP_NAME_FILE 
     				+ worker // hostname
     				+ Constant.SEP_NAME_FILE 

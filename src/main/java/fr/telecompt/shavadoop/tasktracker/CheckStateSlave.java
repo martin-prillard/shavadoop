@@ -1,0 +1,63 @@
+package fr.telecompt.shavadoop.tasktracker;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
+
+import fr.telecompt.shavadoop.util.Constant;
+
+public class CheckStateSlave extends Thread {
+
+	private Socket socket;
+	private StateSlaveManager stateSlaveManager;
+	
+	public CheckStateSlave(StateSlaveManager _stateSlaveManager, Socket _socket) {
+		stateSlaveManager = _stateSlaveManager;
+		socket = _socket;
+	}
+	
+	public void run() {
+		if (!stateSlaveManager.getTaskFinished()) {
+			try {
+				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));	
+				
+				// send request
+				sendRequestStateSlave(socket);
+				
+		        // get the state slave
+				String slaveAliveString = in.readLine();
+		        System.out.println(">>>Check : " + slaveAliveString); //TODO
+		        
+		        if (slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED)) {
+		        	stateSlaveManager.caseWorkerTaskIsFinished();
+		        // else get the slave's state
+		        } else if (slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_KO)) {
+		        	stateSlaveManager.caseWorkerDied();
+		        }
+		        
+			} catch (IOException e) {e.printStackTrace();} 
+		}
+
+	}
+	
+	/**
+	 * Send request to the slave to know his state
+	 * @param socket
+	 */
+	public void sendRequestStateSlave(Socket socket) {
+		// request slave state
+	    PrintWriter out = null;
+	    try {
+	        out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+            	
+            // send state
+	        out.println(Constant.MESSAGE_TASKTRACKER_REQUEST);
+	        out.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
