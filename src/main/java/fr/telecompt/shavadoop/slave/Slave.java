@@ -45,11 +45,13 @@ public class Slave
 	// for mode all in one file is enable (best performance)
 	Map<String, Integer> finalMapsInMemory = new HashMap<String, Integer>();
 	private String idWorker;
+	private int nbWorker;
 	
 	public Slave(){}
 	
-    public Slave(SSHManager _sm, String _idWorker, String _hostMaster, String _functionName, String _fileToTreat) {
+    public Slave(SSHManager _sm, int _nbWorker, String _idWorker, String _hostMaster, String _functionName, String _fileToTreat) {
     	sm = _sm;
+    	nbWorker = _nbWorker;
     	idWorker = _idWorker;
     	hostMaster = _hostMaster;
     	functionName = _functionName;
@@ -68,7 +70,7 @@ public class Slave
     	
 	    	case SPLIT_MAPPING_FUNCTION:
 	    		//Launch map method
-	    		splitMapping(hostMaster, fileToTreat);
+	    		splitMapping(nbWorker, hostMaster, fileToTreat);
 	    		break;
 	    		
 	    	case SHUFFLING_MAP_FUNCTION:
@@ -129,16 +131,17 @@ public class Slave
      * Map method
      * @param fileToMap
      */
-    public void splitMapping(String hostMaster, String fileToMap) {
+    public void splitMapping(int nbWorker, String hostMaster, String fileToMap) {
 		 try {
              FileReader fic = new FileReader(fileToMap);
              BufferedReader read = new BufferedReader(fic);
              String line = null;
              
-             List<Pair> unsortedMaps = null;
-            		 
+             List<List<Pair>> listUnsortedMaps = null;
+             int idNextWorker;
+             
              while ((line = read.readLine()) != null) {
-            	 unsortedMaps = wordCount(unsortedMaps, line);
+            	 listUnsortedMaps = wordCount(nbWorker, listUnsortedMaps, line);
              }
              
              fic.close();
@@ -149,9 +152,17 @@ public class Slave
         			 + Constant.SEP_NAME_FILE 
         			 + sm.getHostFull()
         			 + Constant.SEP_NAME_FILE 
-           			 + idWorker;
+           			 + idWorker
+           			 + Constant.SEP_NAME_FILE
+           			 + Constant.F_MAPPING_BY_WORKER
+           			 + Constant.SEP_NAME_FILE
+           			 + idNextWorker;
         	 
-        	 Util.writeFileFromPair(fileToShuffle, unsortedMaps);
+        	 List<Pair> unsortedMaps = null;
+        	 for (int i = 0; i < nbWorker; i++) {
+        		 Util.writeFileFromPair(fileToShuffle, listUnsortedMaps.get(i));
+        		 unsortedMaps.addAll(listUnsortedMaps.get(i));
+        	 }
         	 
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
         	 sendDictionaryElement(hostMaster, unsortedMaps, fileToShuffle);
@@ -167,20 +178,31 @@ public class Slave
      * @param line
      * @return
      */
-    public List<Pair> wordCount(List<Pair> mapWc, String line) {
+    public List<List<Pair>> wordCount(int nbWorker, List<List<Pair>> mapWc, String line) {
     	if (mapWc == null) {
-    		mapWc = new ArrayList<Pair>();
+    		mapWc = new ArrayList<new ArrayList<Pair>>();
     	}
     	//We split the line word by word
     	String words[] = line.split(Constant.SEP_WORD);
     	
     	for (int i = 0; i < words.length; i++) {
     		String word = words[i];
-    		//Increment counter value for this word
-    		mapWc.add(new Pair(word, String.valueOf(1)));
+    		//Add counter value for this word
+    		int idNextWorker =  getIdNextWorker(word, nbWorker);
+    		mapWc.get(idNextWorker).add(new Pair(word, String.valueOf(1)));
     	}
     	
     	return mapWc;
+    }
+    
+    /**
+     * Return the id next worker from the key
+     * @param key
+     * @param nbWorker
+     * @return
+     */
+    public int getIdNextWorker(String key, int nbWorker) {
+    	return (int) (Util.hash64(key) % nbWorker);
     }
     
     /**

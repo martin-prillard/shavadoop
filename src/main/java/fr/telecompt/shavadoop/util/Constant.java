@@ -21,6 +21,7 @@ public class Constant {
 	public final static String PATH_F_INPUT_CLEANED = PATH_REPO_RES + "input_cleaned";
 	public final static String PATH_F_SPLITING = PATH_REPO_RES + "S";
 	public final static String PATH_F_MAPPING = PATH_REPO_RES + "UM";
+	public final static String F_MAPPING_BY_WORKER = "W";
 	public final static String PATH_F_SHUFFLING_DICTIONARY = PATH_REPO_RES + "DSM";
 	public final static String PATH_F_SHUFFLING = PATH_REPO_RES + "SM";
 	public final static String PATH_F_REDUCING = PATH_REPO_RES + "RM";
