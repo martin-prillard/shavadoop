@@ -10,9 +10,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,9 +63,11 @@ public class Slave
 	
     public void launchWork() {
     	
-    	// launch thread slave state for the task tracker
-    	StateSlave sst = new StateSlave(this, hostMaster, portTaskTracker);
-    	sst.start();
+    	if (Constant.TASK_TRACKER) {
+	    	// launch thread slave state for the task tracker
+	    	StateSlave sst = new StateSlave(this, hostMaster, portTaskTracker);
+	    	sst.start();
+    	}
     	
     	switch (functionName){
     	

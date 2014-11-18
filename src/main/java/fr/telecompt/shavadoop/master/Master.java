@@ -46,6 +46,8 @@ public class Master
 	private SSHManager sm;
 	private int nbWorkerMappers;
 	private double startTime;
+	private String fileToTreat;
+	private List<String> workersCores;
 	
 	// dictionary
 	Map<String, HashSet<Pair>> dictionaryMapping; // worker, (host, UM_Wx file) -> to to shuffling
@@ -66,7 +68,7 @@ public class Master
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize and clean " + Constant.APP_DEBUG_TITLE);
 		
 		// get values from properties file
-		String fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
+		fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
 		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
     	portMasterDictionary = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER_DICTIONARY));
     	portTaskTracker = Integer.parseInt(prop.getPropValues(PropReader.PORT_TASK_TRACKER));
@@ -75,10 +77,11 @@ public class Master
 		// clean res directory
 		Util.initializeResDirectory(Constant.PATH_REPO_RES);
 		
-		// clean the input text
-		fileInputCleaned = Constant.PATH_F_INPUT_CLEANED;
-		Util.cleanText(fileToTreat, fileInputCleaned);
-		if (Constant.MODE_DEBUG) System.out.println("file " + fileInputCleaned + " cleaned");
+		// get workers
+		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
+		workersCores = sm.getHostAliveCores(nbWorkerMax, false);
+		nbWorker = workersCores.size();
+		if (Constant.MODE_DEBUG) System.out.println("Workers core : " + workersCores); 
 		
 	}
 	
@@ -88,14 +91,15 @@ public class Master
 	 */
 	public void launchMapReduce() {
     	
-		// get workers
-		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
-		List<String> workersCores = sm.getHostAliveCores(nbWorkerMax, false);
-		nbWorker = workersCores.size();
-		if (Constant.MODE_DEBUG) System.out.println("Workers core : " + workersCores); 
+		startTime = System.currentTimeMillis();
 		
     	if (Constant.MODE_DEBUG) System.out.println("Shavadoop workflow on : " + fileInputCleaned);
-    	
+    			
+		// clean the input text
+		fileInputCleaned = Constant.PATH_F_INPUT_CLEANED;
+		Util.cleanText(fileToTreat, fileInputCleaned);
+		if (Constant.MODE_DEBUG) System.out.println("file " + fileInputCleaned + " cleaned");
+		
         // Split the file : master
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting : " + Constant.APP_DEBUG_TITLE);
 		List<String> filesToMap = inputSplitting(workersCores, fileInputCleaned);
@@ -116,9 +120,9 @@ public class Master
         assemblingFinalMaps();
         
         double totalTime = (System.currentTimeMillis() - startTime);
-        totalTime = (double) ((totalTime / (1000.0*60.0)) % 60.0);
+        totalTime = (double) (totalTime / 1000.0) % 60 ;
         
-        if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " MapReduce process done in " + totalTime + " minutes " + Constant.APP_DEBUG_TITLE);
+        System.out.println(Constant.APP_DEBUG_TITLE + " MapReduce process done in " + totalTime + " secondes " + Constant.APP_DEBUG_TITLE);
 	}
 	
 	
@@ -181,8 +185,11 @@ public class Master
     public Map<String, HashSet<Pair>> launchSplitMappingThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), null);
-		es.execute(ts);
+		TaskTracker ts = null;
+		if (Constant.TASK_TRACKER) {
+			ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), null);
+			es.execute(ts);
+		}
 		
 		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
 		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
@@ -203,12 +210,17 @@ public class Master
 	    	}
 	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost(), Integer.toString(idWorkerMapperCore));
 			es.execute(smt);
-			ts.addTask(smt, workersMapperCores.get(i), Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
+			if (Constant.TASK_TRACKER) {
+				ts.addTask(smt, workersMapperCores.get(i), Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
+			}
 			++idWorkerMapperCore;
     	}
 		
     	if (Constant.MODE_DEBUG) System.out.println("Waitting the end of maps process...");
     	
+    	if (!Constant.TASK_TRACKER) {
+    		es.shutdown();
+    	}
     	
 		//Wait while all the threads are not finished yet
 		try {
@@ -230,8 +242,11 @@ public class Master
 		
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dictionaryReducing);
-		es.execute(ts);
+		TaskTracker ts = null;
+		if (Constant.TASK_TRACKER) {
+			ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dictionaryReducing);
+			es.execute(ts);
+		}
 		
 		//For each key and files to shuffling maps
 		for (Entry<String, HashSet<Pair>> e : dictionaryMapping.entrySet()) {
@@ -261,10 +276,16 @@ public class Master
 			// launch shuffling map process
 			Thread smt = new LaunchShufflingMap(sm, String.valueOf(nbWorker), workerReducer, shufflingDictionaryFile, sm.getHost(), Integer.toString(idWorkerReducerCore));
 			es.execute(smt);
-			ts.addTask(smt, workerReducer, Integer.toString(idWorkerReducerCore), Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
+			if (Constant.TASK_TRACKER) {
+				ts.addTask(smt, workerReducer, Integer.toString(idWorkerReducerCore), Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
+			}
 		}
 		
 		if (Constant.MODE_DEBUG) System.out.println("Waitting the end of shuffling maps process...");
+		
+		if (!Constant.TASK_TRACKER) {
+			es.shutdown();
+		}
 		
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
