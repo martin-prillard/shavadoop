@@ -1,10 +1,13 @@
 package fr.telecompt.shavadoop.main;
 
+import java.io.File;
+
 import fr.telecompt.shavadoop.master.Master;
 import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
+import fr.telecompt.shavadoop.util.Util;
 
 public class Main {
 		
@@ -16,15 +19,21 @@ public class Main {
     	
     	if (args.length == 0) {
     		
+    		if(!Constant.MODE_SCP_FILES) {
+    			// clean res directory
+    			Util.initializeResDirectory(Constant.PATH_REPO_RES, true);
+    		}
+    		
     		// get network's ip adress
         	PropReader prop = new PropReader();
-        	String ipFile = prop.getPropValues(PropReader.FILE_IP_ADRESS);
+        	String ipFileString = prop.getPropValues(PropReader.FILE_IP_ADRESS);
+        	File ipFile = new File(ipFileString);
         	// if no ip file given
-        	if (ipFile == null || ipFile.trim().equals("")) {
+        	if (!ipFile.exists()) {
         		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Generate network's IP adress file " + Constant.APP_DEBUG_TITLE);
         		sm.generateNetworkIpAdress(prop.getPropValues(PropReader.NETWORK_IP_REGEX));
         	} else {
-        		Constant.PATH_NETWORK_IP_FILE = ipFile;
+        		Constant.PATH_NETWORK_IP_FILE = ipFileString;
         	}
         	
     		// Launch the master

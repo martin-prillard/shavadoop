@@ -17,8 +17,7 @@ public class PropReader {
 	public static final String THREAD_MAX_BY_WORKER = "thread_max_by_worker";
 	public static final String THREAD_QUEUE_MAX_BY_WORKER = "thread_queue_max_by_worker";
 	public static final String THREAD_MAX_LIFETIME = "thread_max_lifetime";
-	public static final String PATH_MASTER = "path_master";
-	public static final String PATH_SLAVE = "path_slave";
+	public static final String PATH_REPO = "path_repo";
 	public static final String NETWORK_IP_REGEX = "network_ip_regex";
 	public static final String MODE_DEBUG = "mode_debug";
 	public static final String MODE_SCP_FILES = "mode_scp_files";

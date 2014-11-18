@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -33,7 +32,7 @@ public class Util {
 	 */
 	public static void writeFile(String nameFile, Map<String, Integer> content) {
 		try {
-			FileWriter fw = new FileWriter (nameFile);
+			FileWriter fw = new FileWriter(nameFile);
 			BufferedWriter bw = new BufferedWriter (fw);
 			PrintWriter write = new PrintWriter (bw); 
 			
@@ -52,7 +51,7 @@ public class Util {
 	
 	public static void writeFile(String nameFile, List<String> content) {
 		try {
-			FileWriter fw = new FileWriter (nameFile);
+			FileWriter fw = new FileWriter(nameFile);
 			BufferedWriter bw = new BufferedWriter (fw);
 			PrintWriter write = new PrintWriter (bw); 
 			
@@ -124,13 +123,15 @@ public class Util {
 		} catch (IOException e) {e.printStackTrace();}
 	}
 	
-	public static void initializeResDirectory(String pathRepoRes) {
+	public static void initializeResDirectory(String pathRepoRes, boolean clean) {
 		Pattern paternRootPath = Pattern.compile(Constant.PATH_ROOT);
 		Matcher matcherRootPath = paternRootPath.matcher(pathRepoRes);
 		// clean directory
 		if (!matcherRootPath.find()) {
 			createDirectory(new File(pathRepoRes));
-			cleanDirectory(new File(pathRepoRes)); 
+			if (clean) {
+				cleanDirectory(new File(pathRepoRes)); 
+			}
 			if (Constant.MODE_DEBUG) System.out.println(pathRepoRes + " directory cleaned");
 		} else {
 			if (Constant.MODE_DEBUG) System.out.println(pathRepoRes + " is the root path ! ");
@@ -262,7 +263,6 @@ public class Util {
      */
     public static List<String> splitLargeFile(String file, int nbBlocByHost, int restBlocByHost, int nbWorkerMappers) {
     	List<String> filesToMap = new ArrayList<String>();
-    	//TODO couper a la fin des lignes, serialization ?
     	File inputFile = new File(file);
 		FileInputStream inputStream;
 		FileOutputStream filePart;
@@ -321,5 +321,13 @@ public class Util {
         }
         return rv;
     }
+    
+//    public static long hash64(final String k) {
+//    	long hash=7;
+//    	for (int i=0; i < k.length(); i++) {
+//    	    hash = hash*31+(k.charAt(i));
+//    	}
+//    	return hash;
+//    }
 	
 }

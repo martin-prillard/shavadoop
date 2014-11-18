@@ -7,10 +7,12 @@ import fr.telecompt.shavadoop.util.Constant;
 public class FileTransfert extends ShellThread {
 	
 	private String destFile;
+	private boolean fromLocal;
 	
-	public FileTransfert(SSHManager _sm, String _HostOwner, String _fileToTreat, String _destFile) {
+	public FileTransfert(SSHManager _sm, String _HostOwner, String _fileToTreat, String _destFile, boolean _fromLocal) {
 		super(_sm, _HostOwner, _fileToTreat);
 		destFile = _destFile;
+		fromLocal = _fromLocal;
 	}
 	
 	public void run() {
@@ -18,7 +20,12 @@ public class FileTransfert extends ShellThread {
 	}
 	
 	public void transfertFileScp() {
-		String cmd = "scp " + fileToTreat + " " + username + "@" + sm.getHostFull() + ":" + destFile;
+		String cmd = null;
+		if (fromLocal) {
+			cmd = "scp " + fileToTreat + " " + username + "@" + distantHost + ":" + destFile;
+		} else {
+			cmd = "scp " + username + "@" + distantHost + ":" + destFile + " " + fileToTreat;
+		}
 		try {
 			// Run a java app in a separate system process
 			Process p = Runtime.getRuntime().exec(cmd);

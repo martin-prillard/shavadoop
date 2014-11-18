@@ -7,6 +7,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,14 +20,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.FilenameUtils;
-
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.tasktracker.TaskTracker;
-import fr.telecompt.shavadoop.thread.FileTransfert;
+import fr.telecompt.shavadoop.thread.DictionaryManager;
 import fr.telecompt.shavadoop.thread.LaunchShufflingMap;
 import fr.telecompt.shavadoop.thread.LaunchSplitMapping;
-import fr.telecompt.shavadoop.thread.DictionaryManager;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
 import fr.telecompt.shavadoop.util.PropReader;
@@ -72,14 +71,18 @@ public class Master
 		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
     	portMasterDictionary = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER_DICTIONARY));
     	portTaskTracker = Integer.parseInt(prop.getPropValues(PropReader.PORT_TASK_TRACKER));
+
 		if (Constant.MODE_DEBUG) System.out.println("Variables initialized");
-		
-		// clean res directory
-		Util.initializeResDirectory(Constant.PATH_REPO_RES);
 		
 		// get workers
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
+    	try {
+			Constant.PATH_SHAVADOOP_JAR = URLDecoder.decode(Constant.PATH_SHAVADOOP_JAR_TODECODE, "UTF-8");
+		} catch (UnsupportedEncodingException e) {e.printStackTrace();}
 		workersCores = sm.getHostAliveCores(nbWorkerMax, false);
+		if (Constant.MODE_SCP_FILES) {
+			Constant.PATH_SHAVADOOP_JAR = Constant.PATH_JAR;
+		}
 		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) System.out.println("Workers core : " + workersCores); 
 		
@@ -304,11 +307,6 @@ public class Master
     	String fileFinalResult = Constant.PATH_F_FINAL_RESULT;
     	// Get the list of file
     	Set<String> listFiles = new HashSet<String>();
-    	 
-    	ExecutorService esModeScp = null;
-    	if (Constant.MODE_SCP_FILES) {
-    		esModeScp = Executors.newCachedThreadPool();
-    	}
     	
     	for (Entry<String, String> e : dictionaryReducing.entrySet()) {
     		
@@ -316,34 +314,13 @@ public class Master
     		String worker = e.getValue();
     		String nameFileToMerge = Constant.PATH_F_REDUCING 
     				+ Constant.SEP_NAME_FILE 
-    				+ worker // hostname
-    				+ Constant.SEP_NAME_FILE 
-           			+ idWorker; //id worker
-    		
-    		if (Constant.MODE_SCP_FILES) {
-    			// if it's a slave's file and not a master's file
-    			if (!worker.equalsIgnoreCase(sm.getHostFull())) {
-		    		// MASTER <- SLAVE files
-		    		String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(nameFileToMerge);
-					// if the file doesn't exist on this computer
-					File f = new File(destFile);
-					if (!f.exists()) {
-						esModeScp.execute(new FileTransfert(sm, worker, nameFileToMerge, destFile));
-			    		nameFileToMerge = destFile;
-					}
-    			}
-    		}
+           			+ idWorker//id worker
+           			+ Constant.SEP_NAME_FILE
+           			+ worker; // hostname
     		
     		listFiles.add(nameFileToMerge); 
     	}
 
-    	if (Constant.MODE_SCP_FILES) {
-	    	esModeScp.shutdown();
-			try {
-				esModeScp.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
-			} catch (InterruptedException e) {e.printStackTrace();}
-    	}
-		
     	if (Constant.MODE_DEBUG) System.out.println("Nb files to merge : " + listFiles.size());
     	if (Constant.MODE_DEBUG) System.out.println("Waitting the end of merging process...");
     	

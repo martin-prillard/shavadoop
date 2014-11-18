@@ -33,7 +33,7 @@ public class LaunchShufflingMap extends ShellThread {
 	public void run() {
 		
         try {
-			String pathJar = Constant.PATH_JAR;
+			String pathJar = Constant.PATH_SHAVADOOP_JAR;
 			String method = Slave.SHUFFLING_MAP_FUNCTION;
 			
 			// execute on the master's computer
@@ -50,8 +50,9 @@ public class LaunchShufflingMap extends ShellThread {
 				
 				if (Constant.MODE_SCP_FILES) {
 					// MASTER DSM file -> SLAVE
-					String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
-					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile);
+					String destFile = Constant.PATH_REPO_RES 
+							+ FilenameUtils.getBaseName(fileToTreat);
+					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
 					ft.transfertFileScp();
 					fileToTreat = destFile;
 				}

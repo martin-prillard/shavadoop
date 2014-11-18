@@ -1,7 +1,6 @@
 package fr.telecompt.shavadoop.master;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -11,7 +10,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
@@ -34,7 +37,11 @@ public class SSHManager {
 	private String username = System.getProperty("user.name");
 	private String homeDirectory = System.getProperty("user.home");
 	private String ipAdress;
+	private Set<String> initializedHost = new HashSet<String>();
 	
+	/**
+	 * Initialize the SSH manager
+	 */
 	public void initialize() {
 		
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize SSH Manager " + Constant.APP_DEBUG_TITLE);
@@ -58,6 +65,7 @@ public class SSHManager {
 		dsaKey = getDsaKey(dsaFile);
 	}
 	
+	
 	/**
 	 * Return x hosts alive
 	 * @param hosts
@@ -78,9 +86,6 @@ public class SSHManager {
 		
 		List<String> hostAlive = new ArrayList<String>();
 		
-		String destFile = Constant.PATH_SLAVE + Constant.APP_JAR;
-		File jar = new File(destFile);
-		
 		// if need more worker, use the distant computer
 		if (hostAlive.size() < nbWorker) {
 			for (String host : hostsNetwork) {
@@ -88,15 +93,16 @@ public class SSHManager {
 					if (isLocal(host)) {
 						// add to our list of cores alive
 						hostAlive.add(host);
+						if (Constant.MODE_SCP_FILES && !initializedHost.contains(host)) {
+							initializeShavadoopWorkspace(host);
+						}
 					} else if (!isLocal(host) && isAlive(host)) {
 						for (int i = 0; i < getCoresNumber(host); i++) {
 							if (hostAlive.size() < nbWorker) {
 								// add to our list of cores alive
 								hostAlive.add(host);
-								// transfert the jar program if needed
-								if (Constant.MODE_SCP_FILES && !jar.exists()) {
-									FileTransfert ft = new FileTransfert(this, host, Constant.PATH_JAR, destFile);
-									ft.transfertFileScp();
+								if (Constant.MODE_SCP_FILES && !initializedHost.contains(host)) {
+									initializeShavadoopWorkspace(host);
 								}
 							} else {
 								break;
@@ -114,6 +120,35 @@ public class SSHManager {
 		return hostAlive;
 	}
 	
+	
+	/**
+	 * Create the directories and jar on distant computer needed to run shavadoop
+	 */
+	public void initializeShavadoopWorkspace(String host) {
+		
+		Pattern paternRootPath = Pattern.compile(Constant.PATH_ROOT);
+		Matcher matcherRootPath = paternRootPath.matcher(Constant.PATH_REPO);
+		// clean directory
+		if (!matcherRootPath.find()) {
+			try {
+				Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
+				new Shell.Plain(shell).exec("rm -rf " + Constant.PATH_REPO);
+				new Shell.Plain(shell).exec("mkdir " + Constant.PATH_REPO);
+				new Shell.Plain(shell).exec("mkdir " + Constant.PATH_REPO_RES);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		// transfert the jar program if needed
+		FileTransfert ft = new FileTransfert(this, host, Constant.PATH_SHAVADOOP_JAR, Constant.PATH_JAR, true);
+		ft.transfertFileScp();
+		
+		
+		initializedHost.add(host);
+	}
+	
+	
 	/**
 	 * Test if a host is alive
 	 * @param host
@@ -126,15 +161,16 @@ public class SSHManager {
 		boolean alive = false;
 		// test if this host is alive
 		try {
-			//Connect to the distant computer
+			String cmd = "echo " + host;
 			Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
-			new Shell.Plain(shell).exec("echo " + host); 
+			new Shell.Plain(shell).exec(cmd);
 			alive = true;
 		} catch (Exception e) {
 			// System.out.println("Fail to connect to " + host);
 		}
 		return alive;
 	}
+	
 	
 	/**
 	 * Return the cores number from the distant computer
@@ -145,10 +181,9 @@ public class SSHManager {
 		int cores = 0;
 		// test if this host is alive
 		try {
-			// connect to the distant computer
-			Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
 			// get the number of cores
 			String cmd = "grep -c ^processor /proc/cpuinfo";
+			Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
 			String stdout = new Shell.Plain(shell).exec(cmd);
 			cores = Integer.parseInt(stdout.trim()); 
 		} catch (Exception e) {
@@ -156,6 +191,7 @@ public class SSHManager {
 		}
 		return cores;
 	}
+	
 	
     /**
      * Return list of hostname from a file
@@ -193,6 +229,7 @@ public class SSHManager {
     	return hostnameMappers;
     }
     
+    
     /**
      * Return the dsa key
      * @param dsaFile
@@ -218,6 +255,11 @@ public class SSHManager {
 		return dsaKey;
 	}
 
+	
+	/**
+	 * Get the network's ip adress
+	 * @param regex
+	 */
 	public void generateNetworkIpAdress(String regex) {
 		
 		String cmdLine = "nmap -sn " + ipAdress + "/24 | awk \'{print $5}\' | grep -o " + prop.getPropValues(PropReader.NETWORK_IP_REGEX);
@@ -250,6 +292,12 @@ public class SSHManager {
 		
 	}
 	
+	
+	/**
+	 * Return true if the worker is the master
+	 * @param worker
+	 * @return
+	 */
 	public boolean isLocal(String worker) {
 		boolean local = false;
 		if (worker.equalsIgnoreCase(hostFull)) {

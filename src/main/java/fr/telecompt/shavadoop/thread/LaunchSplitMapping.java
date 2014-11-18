@@ -29,8 +29,7 @@ public class LaunchSplitMapping extends ShellThread {
 	public void run() {
 		
 		try {
-			
-			String pathJar = Constant.PATH_JAR;
+			String pathJar = Constant.PATH_SHAVADOOP_JAR;
 			String method = Slave.SPLIT_MAPPING_FUNCTION;
 	
 			// execute on the master's computer
@@ -47,8 +46,9 @@ public class LaunchSplitMapping extends ShellThread {
 				
 				if (Constant.MODE_SCP_FILES) {
 					// MASTER files -> SLAVE
-					String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
-					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile);
+					String destFile = Constant.PATH_REPO_RES 
+							+ FilenameUtils.getBaseName(fileToTreat);
+					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
 					ft.transfertFileScp();
 					fileToTreat = destFile;
 				}
@@ -56,7 +56,7 @@ public class LaunchSplitMapping extends ShellThread {
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				
 				// launch map process
-				String stdout = new Shell.Plain(shell).exec(cmd);
+				new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
 			}
 	    } catch (InterruptedIOException e) { // if thread was interrupted

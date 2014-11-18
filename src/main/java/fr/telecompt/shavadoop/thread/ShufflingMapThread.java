@@ -33,11 +33,12 @@ public class ShufflingMapThread extends Thread {
 			// SLAVE <- SLAVE/MASTER files
 	    	ExecutorService es = Executors.newCachedThreadPool();
 
-			String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToShuffling);
+			String destFile = Constant.PATH_REPO_RES 
+					+ FilenameUtils.getName(fileToShuffling);
 			// if the file doesn't exist on this computer
 			File f = new File(fileToShuffling);
 			if (!f.exists()) {
-				es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile));
+				es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile, false));
 				fileToShuffling = destFile;
 			}
 				

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.tasktracker.StateSlave;
+import fr.telecompt.shavadoop.thread.FileTransfert;
 import fr.telecompt.shavadoop.thread.ShufflingMapThread;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
@@ -111,13 +112,27 @@ public class Slave
 		    		
 	    			String fileToAssemble = Constant.PATH_F_REDUCING 
 	           			 + Constant.SEP_NAME_FILE
-	           			 + sm.getHostFull()
+	           			 + idWorker
 	           			 + Constant.SEP_NAME_FILE 
-	           			 + idWorker;
+	           			 + sm.getHostFull();
 	    			Util.writeFile(fileToAssemble, finalMapsInMemory);
 		    		
+	    			//Send this file to the master
+	        		if (Constant.MODE_SCP_FILES) { 
+	        			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
+			    		// SLAVE file -> MASTER
+	        			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true));
+						esScpFile.shutdown();
+			    		try {
+			    			esScpFile.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
+			    		} catch (InterruptedException e) {
+			    			e.printStackTrace();
+			    			state = false;
+			    		}
+		    		}
+	    			
 	    		} catch (IOException e) {
-	    			System.out.println("No shuffling dictionary file");
+	    			System.out.println("No shuffling dictionary file : " + fileToTreat);
 	    			state = false;
 	    		}
 	    		break;
@@ -149,7 +164,6 @@ public class Slave
             	 unsortedMaps.add(new ArrayList<Pair>());
              }
              
-             
              while ((line = read.readLine()) != null) {
             	 unsortedMaps = wordCount(nbWorker, unsortedMaps, line);
              }
@@ -157,19 +171,18 @@ public class Slave
              fic.close();
              read.close();   
 
-             
         	 for (List<Pair> e : unsortedMaps) {
         		 if (!e.isEmpty()) {
 	                 // Write UM File
 	            	 String fileToShuffle = Constant.PATH_F_MAPPING 
 	            			 + Constant.SEP_NAME_FILE 
-	            			 + sm.getHostFull()
-	            			 + Constant.SEP_NAME_FILE 
 	               			 + idWorker
 	               			 + Constant.SEP_NAME_FILE
 	               			 + Constant.F_MAPPING_BY_WORKER
 	               			 + Constant.SEP_NAME_FILE
-	               			 + idNextWorker;
+	               			 + idNextWorker
+	               			 + Constant.SEP_NAME_FILE 
+	               			 + sm.getHostFull();
 	            	 
 	        		 Util.writeFileFromPair(fileToShuffle, e);
 	        		 partDictionary.put(String.valueOf(idNextWorker), new Pair(sm.getHostFull(), fileToShuffle));
