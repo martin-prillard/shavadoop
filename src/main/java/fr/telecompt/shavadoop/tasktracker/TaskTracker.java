@@ -26,12 +26,14 @@ public class TaskTracker extends Thread {
 	private Map<String, String> dictionaryReducing = null;
 	private int portTaskTracker;
 	private ServerSocket ss = null;
+	private String nbWorker;
 	
-	public TaskTracker(SSHManager _sm, ExecutorService _es, int _portTaskTracker, Map<String, String> _dictionaryReducing) {
+	public TaskTracker(SSHManager _sm, ExecutorService _es, int _portTaskTracker, String _nbWorker, Map<String, String> _dictionaryReducing) {
 		sm = _sm;
 		es = _es;
 		hostMaster = sm.getHost();
 		portTaskTracker = _portTaskTracker;
+		nbWorker = _nbWorker;
 		dictionaryReducing = _dictionaryReducing;
 	}
 	
@@ -110,11 +112,11 @@ public class TaskTracker extends Thread {
 		Thread newTask = null;
 		switch(taskName){
 			case Slave.SPLIT_MAPPING_FUNCTION:
-				newTask = new LaunchSplitMapping(sm, newHost, fileTask, sm.isLocal(newHost), hostMaster, idWorker);
+				newTask = new LaunchSplitMapping(sm, nbWorker, newHost, fileTask, sm.isLocal(newHost), hostMaster, idWorker);
 				es.execute(newTask);
 				break;
 			case Slave.SHUFFLING_MAP_FUNCTION:
-				newTask = new LaunchShufflingMap(sm, newHost, fileTask, hostMaster, idWorker);
+				newTask = new LaunchShufflingMap(sm, nbWorker, newHost, fileTask, hostMaster, idWorker);
 				es.execute(newTask);
 				break;
 		}

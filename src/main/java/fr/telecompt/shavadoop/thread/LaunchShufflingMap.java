@@ -15,9 +15,11 @@ public class LaunchShufflingMap extends ShellThread {
 
 	private String hostMapper;
 	private String idWorker;
+	private String nbWorker;
 	
-	public LaunchShufflingMap(SSHManager _sm, String _distantHost, String _shufflingDictionaryFile, String _hostMapper, String _idWorker) {
+	public LaunchShufflingMap(SSHManager _sm, String _nbWorker, String _distantHost, String _shufflingDictionaryFile, String _hostMapper, String _idWorker) {
 		super(_sm, _distantHost, _shufflingDictionaryFile);
+		nbWorker = _nbWorker;
 		hostMapper = _hostMapper;
 		idWorker = _idWorker;
 	}
@@ -37,7 +39,7 @@ public class LaunchShufflingMap extends ShellThread {
 			// execute on the master's computer
 			if(local) {
 				// Run a java app in a separate system process
-				String cmd = getCmdJar(pathJar, hostMapper, method, fileToTreat, idWorker);
+				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
 				p.waitFor();
@@ -54,7 +56,7 @@ public class LaunchShufflingMap extends ShellThread {
 					fileToTreat = destFile;
 				}
 				
-				String cmd = getCmdJar(pathJar, hostMapper, method, fileToTreat, idWorker);
+				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				
 				//Launch map process
 				new Shell.Plain(shell).exec(cmd);

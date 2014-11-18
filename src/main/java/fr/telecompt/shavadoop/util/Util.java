@@ -136,21 +136,7 @@ public class Util {
 			if (Constant.MODE_DEBUG) System.out.println(pathRepoRes + " is the root path ! ");
 		}
 	}
-	
-	public static String pairToString(Set<Pair> input) {
-		String res = "";
-		for (Pair p : input) {
-			res += p.getVal1() + Constant.SEP_FILES_SHUFFLING_MAP;
-			res += p.getVal2() + Constant.SEP_FILES_SHUFFLING_MAP_GROUP;
-		}
-		
-		// Remove the last separator
-	    if (res.length() > 0 && Character.toString(res.charAt(res.length()-1)).equals(Constant.SEP_FILES_SHUFFLING_MAP_GROUP)) {
-	    	res = res.substring(0, res.length()-1);
-	    }
-	    
-		return res;
-	}
+
 	
     /**
      * Clean the line

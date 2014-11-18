@@ -41,13 +41,14 @@ public class Master
 	private int portMasterDictionary;
 	private int portTaskTracker;
 	private int nbWorkerMax;
+	private int nbWorker;
 	private PropReader prop = new PropReader();
 	private SSHManager sm;
 	private int nbWorkerMappers;
 	private double startTime;
 	
 	// dictionary
-	Map<String, HashSet<Pair>> dictionaryMapping; // key, (host, UM file) -> to to shuffling
+	Map<String, HashSet<Pair>> dictionaryMapping; // worker, (host, UM_Wx file) -> to to shuffling
 	Map<String, String> dictionaryReducing; // idWorker, host -> to get all RM files
 	
 
@@ -90,6 +91,7 @@ public class Master
 		// get workers
 		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Get workers core alive : " + Constant.APP_DEBUG_TITLE);
 		List<String> workersCores = sm.getHostAliveCores(nbWorkerMax, false);
+		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) System.out.println("Workers core : " + workersCores); 
 		
     	if (Constant.MODE_DEBUG) System.out.println("Shavadoop workflow on : " + fileInputCleaned);
@@ -179,7 +181,7 @@ public class Master
     public Map<String, HashSet<Pair>> launchSplitMappingThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, null);
+		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), null);
 		es.execute(ts);
 		
 		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
@@ -190,7 +192,7 @@ public class Master
     	// listener to get part dictionary from the worker mappers
     	es.execute(new DictionaryManager(portMasterDictionary, nbWorkerMappers, dictionaryMapping));
     	
-    	int idWorkerMapperCore = 1;
+    	int idWorkerMapperCore = 0;
     	
 		//For each files to map
     	for (int i = 0; i < filesToMap.size(); i++) {
@@ -199,7 +201,7 @@ public class Master
 	    	} catch(InterruptedException ex) {
 	    	    Thread.currentThread().interrupt();
 	    	}
-	    	Thread smt = new LaunchSplitMapping(sm, workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost(), Integer.toString(idWorkerMapperCore));
+	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost(), Integer.toString(idWorkerMapperCore));
 			es.execute(smt);
 			ts.addTask(smt, workersMapperCores.get(i), Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
 			++idWorkerMapperCore;
@@ -228,81 +230,41 @@ public class Master
 		
 		//Object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, dictionaryReducing);
+		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dictionaryReducing);
 		es.execute(ts);
-		
-		int idWorkerReducerCore = 0;
-		String workerReducer = workersCores.get(idWorkerReducerCore);
-
-		int workersReducer = workersCores.size();
-		int totalReducerTodo = dictionaryMapping.size();
-		
-        // if too more worker available for reduce process
-        if (workersReducer > totalReducerTodo) {
-        	workersReducer = totalReducerTodo;
-        }
-        // The rest of the division for the last host
-        int restThreadByCore = totalReducerTodo % workersReducer;
-        // Calculate the number of lines for each host
-        int nbThreadByCore = (totalReducerTodo - restThreadByCore) / (workersReducer);
-        
-        if (Constant.MODE_DEBUG) System.out.println("Nb workers core reducer : " + workersReducer + " " + workersCores);
-        if (Constant.MODE_DEBUG) System.out.println("Nb reduce to do : " + totalReducerTodo);
-        if (Constant.MODE_DEBUG) System.out.println("Nb reduce by core : " + nbThreadByCore);
-        if (Constant.MODE_DEBUG) System.out.println("Nb reduce for the last core : " + restThreadByCore);
-        
-		// the number of light threads by computer
-		int cptLightThread = 0;
-		
-		// File output
-		String shufflingDictionaryFile = 
-				Constant.PATH_F_SHUFFLING_DICTIONARY 
-				+ Constant.SEP_NAME_FILE 
-				+ idWorkerReducerCore;
-		FileWriter fw = new FileWriter(shufflingDictionaryFile);
-		BufferedWriter bw = new BufferedWriter(fw);
-		PrintWriter write = new PrintWriter(bw); 
 		
 		//For each key and files to shuffling maps
 		for (Entry<String, HashSet<Pair>> e : dictionaryMapping.entrySet()) {
 			
-			write.println(e.getKey()
-			    		+ Constant.SEP_CONTAINS_FILE
-			    		+ Util.pairToString(e.getValue())); 
-
-			dictionaryReducing.put(Integer.toString(idWorkerReducerCore), workerReducer);
-			++cptLightThread;
+			int idWorkerReducerCore = Integer.valueOf(e.getKey());
+			String workerReducer = workersCores.get(idWorkerReducerCore);
 			
-			if ((cptLightThread == nbThreadByCore && idWorkerReducerCore < workersReducer - 1)
-					|| (cptLightThread == nbThreadByCore + restThreadByCore && idWorkerReducerCore == workersReducer - 1)) {
-				write.close();
-				// launch shuffling map process
-				Thread smt = new LaunchShufflingMap(sm, workerReducer, shufflingDictionaryFile, sm.getHost(), Integer.toString(idWorkerReducerCore));
-				es.execute(smt);
-				ts.addTask(smt, workerReducer, Integer.toString(idWorkerReducerCore), Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
-				// if enought heavy threads launch for one distant computer, change the worker reducer
-				++idWorkerReducerCore;
-				// if still worker needed
-				if (idWorkerReducerCore < workersCores.size()) {
-					workerReducer = workersCores.get(idWorkerReducerCore);
-					// reset 
-					cptLightThread = 0;
-					shufflingDictionaryFile = 
-							Constant.PATH_F_SHUFFLING_DICTIONARY 
-							+ Constant.SEP_NAME_FILE 
-							+ idWorkerReducerCore;
-					fw = new FileWriter(shufflingDictionaryFile);
-					bw = new BufferedWriter(fw);
-					write = new PrintWriter(bw); 
-				}
-       	 	}
-		}
+			// File output
+			String shufflingDictionaryFile = 
+					Constant.PATH_F_SHUFFLING_DICTIONARY 
+					+ Constant.SEP_NAME_FILE 
+					+ idWorkerReducerCore;
+			FileWriter fw = new FileWriter(shufflingDictionaryFile);
+			BufferedWriter bw = new BufferedWriter(fw);
+			PrintWriter write = new PrintWriter(bw); 
+			
+			for (Pair p : e.getValue()) {
+				write.println(p.getVal1()
+			    		+ Constant.SEP_CONTAINS_FILE
+			    		+ p.getVal2()); 
+			}
 
-		if (Constant.MODE_DEBUG) System.out.println("Waitting the end of shuffling maps process...");
+			write.close();
+			
+			dictionaryReducing.put(Integer.toString(idWorkerReducerCore), workerReducer);
+			
+			// launch shuffling map process
+			Thread smt = new LaunchShufflingMap(sm, String.valueOf(nbWorker), workerReducer, shufflingDictionaryFile, sm.getHost(), Integer.toString(idWorkerReducerCore));
+			es.execute(smt);
+			ts.addTask(smt, workerReducer, Integer.toString(idWorkerReducerCore), Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
+		}
 		
-		fw.close();
-		bw.close();
-		write.close();
+		if (Constant.MODE_DEBUG) System.out.println("Waitting the end of shuffling maps process...");
 		
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);

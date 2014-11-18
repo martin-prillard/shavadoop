@@ -49,12 +49,12 @@ public class ListenerDictionary extends Thread {
             
 			// concat the partDictionary with the dictionary
 			for (Entry<String, HashSet<Pair>> e : partDictionary.entrySet()) {
-				String word = e.getKey();
+				String idNextWorker = e.getKey();
 				HashSet<Pair> listFilesCaps = e.getValue();
-				if (dictionary.keySet().contains(word)) {
-					dictionary.get(word).addAll(listFilesCaps);
+				if (dictionary.keySet().contains(idNextWorker)) {
+					dictionary.get(idNextWorker).addAll(listFilesCaps);
 				} else {
-					dictionary.put(word, listFilesCaps);
+					dictionary.put(idNextWorker, listFilesCaps);
 				}
 			}
 			

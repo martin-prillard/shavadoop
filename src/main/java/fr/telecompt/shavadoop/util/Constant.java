@@ -36,8 +36,6 @@ public class Constant {
 	public final static String SEP_NAME_FILE = "_";
 	public final static String SEP_WORD = " ";
 	public final static String SEP_CONTAINS_FILE = ", ";
-	public final static String SEP_FILES_SHUFFLING_MAP = ",";
-	public final static String SEP_FILES_SHUFFLING_MAP_GROUP = ";";
 	
 	// Socket
 	public final static String SEP_SOCKET_MESSAGE = ";";

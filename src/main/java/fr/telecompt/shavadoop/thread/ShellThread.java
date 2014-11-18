@@ -13,7 +13,7 @@ public class ShellThread extends Thread {
 	protected String fileToTreat;
 	protected String dsaKey;
 	protected Shell shell;
-	protected int nbWorker;
+	protected int nbWorkerMax;
 	protected String username;
 	protected SSHManager sm;
 	protected boolean local = false;
@@ -30,13 +30,15 @@ public class ShellThread extends Thread {
 		local = sm.isLocal(distantHost);
 				
 		PropReader prop = new PropReader();
-		nbWorker = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
+		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
 	}
     
-	public String getCmdJar(String pathJar, String host, String method, String fileToTreat, String idWorker) {
+	public String getCmdJar(String pathJar, String nbWorker, String host, String method, String fileToTreat, String idWorker) {
 		return "java -jar" 
 				+ Constant.SEP_WORD
 				+ pathJar
+				+ Constant.SEP_WORD
+				+ nbWorker
 				+ Constant.SEP_WORD
 				+ idWorker
 				+ Constant.SEP_WORD

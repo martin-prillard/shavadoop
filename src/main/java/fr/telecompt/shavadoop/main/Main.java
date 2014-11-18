@@ -32,9 +32,9 @@ public class Main {
         	m.initialize();
         	m.launchMapReduce();
         	
-    	} else if (args.length == 4){
+    	} else if (args.length == 5){
     		// Launch the slave
-    		Slave s = new Slave(sm, args[0], args[1], args[2], args[3]);
+    		Slave s = new Slave(sm, args[0], args[1], args[2], args[3], args[4]);
     		s.launchWork();
     	} else {
     		System.out.println("Not enough args");

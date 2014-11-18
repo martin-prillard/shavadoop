@@ -10,9 +10,12 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -49,9 +52,9 @@ public class Slave
 	
 	public Slave(){}
 	
-    public Slave(SSHManager _sm, int _nbWorker, String _idWorker, String _hostMaster, String _functionName, String _fileToTreat) {
+    public Slave(SSHManager _sm, String _nbWorker, String _idWorker, String _hostMaster, String _functionName, String _fileToTreat) {
     	sm = _sm;
-    	nbWorker = _nbWorker;
+    	nbWorker = Integer.parseInt(_nbWorker);
     	idWorker = _idWorker;
     	hostMaster = _hostMaster;
     	functionName = _functionName;
@@ -78,6 +81,7 @@ public class Slave
 	    		// launch shuffling maps process
 	    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
 	    		int threadQueueMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_QUEUE_MAX_BY_WORKER));
+	    		
 	    		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
 	    		
 	    		try {
@@ -88,9 +92,9 @@ public class Slave
 	    			
 	    			while((shufflingDictionaryLine = br.readLine()) != null){
 	    				String[] elements = shufflingDictionaryLine.split(Constant.SEP_CONTAINS_FILE);
-	    				String key = elements[0];
-	    				String filesToShuffling = elements[1];
-	    				es.execute(new ShufflingMapThread(sm, this, key, filesToShuffling));
+	    				String host = elements[0];
+	    				String fileToShuffling = elements[1];
+	    				es.execute(new ShufflingMapThread(sm, this, host, fileToShuffling));
 	    			}
 	    			
 	    			br.close();
@@ -137,41 +141,51 @@ public class Slave
              BufferedReader read = new BufferedReader(fic);
              String line = null;
              
-             List<List<Pair>> listUnsortedMaps = null;
-             int idNextWorker;
+             Map<String, Pair> partDictionary = new HashMap<String, Pair>();
+             int idNextWorker = 0;
+             
+             List<List<Pair>> unsortedMaps = new ArrayList<List<Pair>>();
+             for (int i = 0; i < nbWorker; i++) {
+            	 unsortedMaps.add(new ArrayList<Pair>());
+             }
+             
              
              while ((line = read.readLine()) != null) {
-            	 listUnsortedMaps = wordCount(nbWorker, listUnsortedMaps, line);
+            	 unsortedMaps = wordCount(nbWorker, unsortedMaps, line);
              }
              
              fic.close();
              read.close();   
-    		 
-             // Write UM File
-        	 String fileToShuffle = Constant.PATH_F_MAPPING 
-        			 + Constant.SEP_NAME_FILE 
-        			 + sm.getHostFull()
-        			 + Constant.SEP_NAME_FILE 
-           			 + idWorker
-           			 + Constant.SEP_NAME_FILE
-           			 + Constant.F_MAPPING_BY_WORKER
-           			 + Constant.SEP_NAME_FILE
-           			 + idNextWorker;
-        	 
-        	 List<Pair> unsortedMaps = null;
-        	 for (int i = 0; i < nbWorker; i++) {
-        		 Util.writeFileFromPair(fileToShuffle, listUnsortedMaps.get(i));
-        		 unsortedMaps.addAll(listUnsortedMaps.get(i));
+
+             
+        	 for (List<Pair> e : unsortedMaps) {
+        		 if (!e.isEmpty()) {
+	                 // Write UM File
+	            	 String fileToShuffle = Constant.PATH_F_MAPPING 
+	            			 + Constant.SEP_NAME_FILE 
+	            			 + sm.getHostFull()
+	            			 + Constant.SEP_NAME_FILE 
+	               			 + idWorker
+	               			 + Constant.SEP_NAME_FILE
+	               			 + Constant.F_MAPPING_BY_WORKER
+	               			 + Constant.SEP_NAME_FILE
+	               			 + idNextWorker;
+	            	 
+	        		 Util.writeFileFromPair(fileToShuffle, e);
+	        		 partDictionary.put(String.valueOf(idNextWorker), new Pair(sm.getHostFull(), fileToShuffle));
+	        		 ++idNextWorker;
+        		 }
         	 }
         	 
         	 // Send dictionary with UNIQUE key (word) and hostname to the master
-        	 sendDictionaryElement(hostMaster, unsortedMaps, fileToShuffle);
+        	 sendDictionaryElement(hostMaster, partDictionary);
         	 
          } catch (Exception e) {
              e.printStackTrace();
              state = false;
          }
     }
+
     
     /**
      * Count the occurence of each word in the sentence
@@ -179,9 +193,6 @@ public class Slave
      * @return
      */
     public List<List<Pair>> wordCount(int nbWorker, List<List<Pair>> mapWc, String line) {
-    	if (mapWc == null) {
-    		mapWc = new ArrayList<new ArrayList<Pair>>();
-    	}
     	//We split the line word by word
     	String words[] = line.split(Constant.SEP_WORD);
     	
@@ -202,26 +213,21 @@ public class Slave
      * @return
      */
     public int getIdNextWorker(String key, int nbWorker) {
-    	return (int) (Util.hash64(key) % nbWorker);
+    	return Math.abs((int) (Util.hash64(key) % nbWorker));
     }
     
+    
     /**
-     * Send key (word) - value (name of the file content), to the master
-     * @param unsortedMaps
-     * @param fileToShuffle
-     * @throws IOException 
-     * @throws UnknownHostException 
+     * Send to the master the id next worker and the names of files to do treat by the next worker
+     * @param hostMaster
+     * @param partDictionary
+     * @throws UnknownHostException
+     * @throws IOException
      */
-    private void sendDictionaryElement(String hostMaster, List<Pair> unsortedMaps, String fileToShuffle) throws UnknownHostException, IOException {
+    private void sendDictionaryElement(String hostMaster, Map<String, Pair> partDictionary) throws UnknownHostException, IOException {
 		
         Socket socket = new Socket(hostMaster, portMasterDictionary);
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-        
-        Map<String, Pair> partDictionary = new HashMap<String, Pair>();
-        for (Pair p : unsortedMaps) {
-        	// Send dictionary element
-        	partDictionary.put(p.getVal1(), new Pair(sm.getHostFull(), fileToShuffle));
-        }
         
         // Send dictionary element
         out.writeObject(partDictionary);
@@ -233,34 +239,27 @@ public class Slave
     
     /**
      * Group and sort maps results by key
-     * @param key
-     * @param shufflingDictionaryLine
+     * @param file
      * @return
      */
-    public List<Pair> shufflingMaps(String key, String[] listFiles) {
+    public List<Pair> shufflingMaps(String file) {
     	List<Pair> sortedMaps = new ArrayList<Pair>();
     	
     	// Concat data of each files in one list pair
 		 try {
-             // For each files
-			 for (int i = 0; i < listFiles.length; i++) {
 				 
-	             FileReader fic = new FileReader(listFiles[i]);
-	             BufferedReader read = new BufferedReader(fic);
-	             String line = null;
-	
-	             // For each lines of the file
-	             while ((line = read.readLine()) != null) {
-		            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
-		            // Search line refers to this key
-		            if (words[0].equals(key)) {
-			            // Add each line matched with the key to our hashmap
-		            	sortedMaps.add(new Pair(words[0], words[1]));
-		            }
-	             } 
-	             fic.close();
-	             read.close();   
-			 }
+             FileReader fic = new FileReader(file);
+             BufferedReader read = new BufferedReader(fic);
+             String line = null;
+
+             // For each lines of the file
+             while ((line = read.readLine()) != null) {
+	            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
+            	sortedMaps.add(new Pair(words[0], words[1]));
+             } 
+             fic.close();
+             read.close();   
+	             
          } catch (Exception e) {
              e.printStackTrace();
              state = false;
@@ -273,24 +272,32 @@ public class Slave
      * Reduce method in-memory
      * @param fileToReduce
      */
-    public void mappingSortedMapsInMemory(String key, List<Pair> sortedMaps) {
+    public void mappingSortedMapsInMemory(List<Pair> sortedMaps) {
 		 try {
 
-             Map<String, Integer> finalMaps = new HashMap<String, Integer>();
+             Map<String, Integer> localFinalMaps = new HashMap<String, Integer>();
              
              for (Pair p : sortedMaps) {
             	 String word = p.getVal1();
             	 String counter = p.getVal2();
-            	//Increment counter value for this word
-          		if (finalMaps.containsKey(word)) {
-          			finalMaps.put(word, finalMaps.get(word) + Integer.parseInt(counter));
+            	// increment counter value for this word
+          		if (localFinalMaps.containsKey(word)) {
+          			localFinalMaps.put(word, localFinalMaps.get(word) + Integer.parseInt(counter));
           		} else {
-          			finalMaps.put(word, Integer.parseInt(counter));
+          			localFinalMaps.put(word, Integer.parseInt(counter));
           		}
              }
     		 
-             //write in the final maps in memory
-             finalMapsInMemory.putAll(finalMaps);
+ 			// concat the localFinalMaps with the finalMapsInMemory
+ 			for (Entry<String, Integer> e : localFinalMaps.entrySet()) {
+ 				String word = e.getKey();
+ 				int counter = e.getValue();
+ 				if (finalMapsInMemory.keySet().contains(word)) {
+ 					finalMapsInMemory.put(word, finalMapsInMemory.get(word) + counter);
+ 				} else {
+ 					finalMapsInMemory.put(word, counter);
+ 				}
+ 			}
              
          } catch (Exception e) {
              e.printStackTrace();

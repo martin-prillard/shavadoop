@@ -85,7 +85,10 @@ public class SSHManager {
 		if (hostAlive.size() < nbWorker) {
 			for (String host : hostsNetwork) {
 				if (hostAlive.size() < nbWorker) {
-					if (isAlive(host)) {
+					if (isLocal(host)) {
+						// add to our list of cores alive
+						hostAlive.add(host);
+					} else if (!isLocal(host) && isAlive(host)) {
 						for (int i = 0; i < getCoresNumber(host); i++) {
 							if (hostAlive.size() < nbWorker) {
 								// add to our list of cores alive
@@ -99,7 +102,7 @@ public class SSHManager {
 								break;
 							}
 						}
-					}
+					} 
 				} else {
 					break;
 				}
@@ -139,7 +142,7 @@ public class SSHManager {
 	 * @return cores
 	 */
 	public int getCoresNumber(String host) {
-		int cores = 1;
+		int cores = 0;
 		// test if this host is alive
 		try {
 			// connect to the distant computer

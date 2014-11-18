@@ -15,47 +15,32 @@ import fr.telecompt.shavadoop.util.Pair;
 
 public class ShufflingMapThread extends Thread {
 
-	private String key;
-	private String filesToShuffling;
+	private String hostOwner;
+	private String fileToShuffling;
 	private Slave slave;
 	private SSHManager sm;
 	
-	public ShufflingMapThread(SSHManager _sm, Slave _slave, String _key, String _filesToShuffling) {
-		key = _key;
-		filesToShuffling = _filesToShuffling;
+	public ShufflingMapThread(SSHManager _sm, Slave _slave, String _hostOwner, String _fileToShuffling) {
+		hostOwner = _hostOwner;
+		fileToShuffling = _fileToShuffling;
 		slave = _slave;
 		sm = _sm;
 	}
 	
 	public void run() {
-		
-    	// Get the list of file
-    	String[] listFilesCaps = filesToShuffling.split(Constant.SEP_FILES_SHUFFLING_MAP_GROUP);
-    	String[] listFilesToTreat = new String[listFilesCaps.length];
-    	
-    	for (int i = 0; i < listFilesCaps.length; i++) {
-    		String[] fileCaps = listFilesCaps[i].split(Constant.SEP_FILES_SHUFFLING_MAP);
-	    	String fileToTreat = fileCaps[1];
-    		listFilesToTreat[i] = fileToTreat;
-    	}
     	
     	if (Constant.MODE_SCP_FILES) {
 			// SLAVE <- SLAVE/MASTER files
 	    	ExecutorService es = Executors.newCachedThreadPool();
-	    	
-	    	// For each files
-	    	for (int i = 0; i < listFilesCaps.length; i++) {
-		    	String[] fileCaps = listFilesCaps[i].split(Constant.SEP_FILES_SHUFFLING_MAP);
-		    	String hostOwner = fileCaps[0];
-		    	String fileToTreat = fileCaps[1];
-				String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToTreat);
-				// if the file doesn't exist on this computer
-				File f = new File(fileToTreat);
-				if (!f.exists()) {
-					es.execute(new FileTransfert(sm, hostOwner, fileToTreat, destFile));
-					listFilesToTreat[i] = destFile;
-				}
-	    	}
+
+			String destFile = Constant.PATH_SLAVE + FilenameUtils.getBaseName(fileToShuffling);
+			// if the file doesn't exist on this computer
+			File f = new File(fileToShuffling);
+			if (!f.exists()) {
+				es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile));
+				fileToShuffling = destFile;
+			}
+				
 	    	es.shutdown();
 			try {
 				es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
@@ -66,9 +51,9 @@ public class ShufflingMapThread extends Thread {
     	}
 		
 		//Lanch shuffling map method
-		List<Pair> sortedMaps = slave.shufflingMaps(key, listFilesToTreat);
+		List<Pair> sortedMaps = slave.shufflingMaps(fileToShuffling);
 		//Launch reduce method
-		slave.mappingSortedMapsInMemory(key, sortedMaps);
+		slave.mappingSortedMapsInMemory(sortedMaps);
 
 	}
 }
