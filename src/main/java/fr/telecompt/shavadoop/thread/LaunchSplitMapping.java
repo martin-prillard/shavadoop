@@ -11,12 +11,18 @@ import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class LaunchSplitMapping extends ShellThread {
 	
 	private String hostMapper;
 	private boolean local;
 	private String idWorker;
 	private String nbWorker;
+	
 	
 	public LaunchSplitMapping(SSHManager _sm, String _nbWorker, String _distantHost, String _fileToTreat, boolean _local, String _hostMapper, String _idWorker) {
 		super(_sm, _distantHost, _fileToTreat);
@@ -25,6 +31,7 @@ public class LaunchSplitMapping extends ShellThread {
 		local = _local;
 		idWorker = _idWorker;
 	}
+	
 	
 	public void run() {
 		
@@ -49,7 +56,7 @@ public class LaunchSplitMapping extends ShellThread {
 					String destFile = Constant.PATH_REPO_RES 
 							+ FilenameUtils.getBaseName(fileToTreat);
 					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
-					ft.transfertFileScp();
+					ft.transferFileScp();
 					fileToTreat = destFile;
 				}
 				

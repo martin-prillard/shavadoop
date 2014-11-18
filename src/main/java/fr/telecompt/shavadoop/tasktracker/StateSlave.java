@@ -7,19 +7,21 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import org.apache.log4j.Logger;
-
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class StateSlave extends Thread {
-
-	static Logger log = Logger.getLogger(StateSlave.class.getName());
-	 
+	
 	private int portTaskTracker;
 	private String hostMaster;
 	private boolean run = true;
 	private Slave slave;
+	
 	
 	public StateSlave(Slave _slave, String _hostMaster, int _portTaskTracker) {
 		slave = _slave;
@@ -27,9 +29,11 @@ public class StateSlave extends Thread {
 		hostMaster = _hostMaster;
 	}
 	
+	
 	private void stopStateSlave() {
 		run = false;
 	}
+	
 	
 	public void run() {
 		Socket socket = null;
@@ -49,6 +53,11 @@ public class StateSlave extends Thread {
 		
 	}
 	
+	
+	/**
+	 * Wait the request state'slave from the task tracker
+	 * @param socket
+	 */
 	public void waitRequestMaster(Socket socket) {
 
 		//Get the return message from the server
@@ -74,6 +83,7 @@ public class StateSlave extends Thread {
 			e.printStackTrace();
 		}
 	}
+	
 	
 	/**
 	 * Send if the worker is working or not
@@ -106,6 +116,10 @@ public class StateSlave extends Thread {
 	}
 	
 	
+	/**
+	 * Send if the worker's task is finished
+	 * @param socket
+	 */
 	public void sendTaskFinished(Socket socket) {
 		// request slave state
 	    PrintWriter out = null;

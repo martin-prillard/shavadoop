@@ -13,6 +13,11 @@ import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class ShufflingMapThread extends Thread {
 
 	private String hostOwner;
@@ -20,12 +25,14 @@ public class ShufflingMapThread extends Thread {
 	private Slave slave;
 	private SSHManager sm;
 	
+	
 	public ShufflingMapThread(SSHManager _sm, Slave _slave, String _hostOwner, String _fileToShuffling) {
 		hostOwner = _hostOwner;
 		fileToShuffling = _fileToShuffling;
 		slave = _slave;
 		sm = _sm;
 	}
+	
 	
 	public void run() {
     	
@@ -55,6 +62,6 @@ public class ShufflingMapThread extends Thread {
 		List<Pair> sortedMaps = slave.shufflingMaps(fileToShuffling);
 		//Launch reduce method
 		slave.mappingSortedMapsInMemory(sortedMaps);
-
 	}
+	
 }

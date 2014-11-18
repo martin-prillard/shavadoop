@@ -2,6 +2,11 @@ package fr.telecompt.shavadoop.util;
 
 import java.io.Serializable;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class Pair implements Serializable
 {
 
@@ -49,4 +54,5 @@ public class Pair implements Serializable
         	return false;
         }
     }
+    
 }

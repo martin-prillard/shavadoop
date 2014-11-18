@@ -16,6 +16,11 @@ import fr.telecompt.shavadoop.thread.LaunchShufflingMap;
 import fr.telecompt.shavadoop.thread.LaunchSplitMapping;
 import fr.telecompt.shavadoop.util.Constant;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class TaskTracker extends Thread {
 
 	private ExecutorService es;
@@ -28,6 +33,7 @@ public class TaskTracker extends Thread {
 	private ServerSocket ss = null;
 	private String nbWorker;
 	
+	
 	public TaskTracker(SSHManager _sm, ExecutorService _es, int _portTaskTracker, String _nbWorker, Map<String, String> _dictionaryReducing) {
 		sm = _sm;
 		es = _es;
@@ -37,6 +43,7 @@ public class TaskTracker extends Thread {
 		dictionaryReducing = _dictionaryReducing;
 	}
 	
+	
 	/**
 	 * Add worker's task to the task tracker
 	 * @param thread
@@ -45,7 +52,6 @@ public class TaskTracker extends Thread {
 	 * @param taskName
 	 * @param fileToTreat
 	 * @param key
-	 * @return taskInfos
 	 */
 	public void addTask(Thread thread, String host, String idWorker, String taskName, String fileToTreat, String key) {
 		List<String> taskInfos = getTaskInfos(host, idWorker, taskName, fileToTreat, key);
@@ -53,6 +59,16 @@ public class TaskTracker extends Thread {
 		esTaskTracker.execute(new StateSlaveManager(this, ss, sm, thread, taskInfos));
 	}
 	
+	
+	/**
+	 * Get task infos
+	 * @param host
+	 * @param idWorker
+	 * @param taskName
+	 * @param fileToTreat
+	 * @param key
+	 * @return task infos
+	 */
 	private List<String> getTaskInfos(String host, String idWorker, String taskName, String fileToTreat, String key) {
 		List<String> taskInfos = new ArrayList<String>();
 		taskInfos.add(host);
@@ -62,6 +78,7 @@ public class TaskTracker extends Thread {
 		taskInfos.add(key);
 		return taskInfos;
 	}
+	
 	
 	/**
 	 * Remove a worker's task of the task tracker
@@ -76,11 +93,13 @@ public class TaskTracker extends Thread {
 		} 
 	}
 	
+	
 	public void run() {
 		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : START");
 		check();
 		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : END");
 	}
+	
 	
 	/**
 	 * Check if the workers are alive
@@ -102,6 +121,16 @@ public class TaskTracker extends Thread {
 		
 	}
 	
+	
+	/**
+	 * Relaunch a worker's task
+	 * @param thread
+	 * @param newHost
+	 * @param idWorker
+	 * @param taskName
+	 * @param fileTask
+	 * @param key
+	 */
 	public void relaunchTask(Thread thread, String newHost, String idWorker, String taskName, String fileTask, String key) {
 		// if needed, modify the dictionary file
 		if (dictionaryReducing != null) {
@@ -120,7 +149,6 @@ public class TaskTracker extends Thread {
 				es.execute(newTask);
 				break;
 		}
-		
 		// add this new task
 		addTask(newTask, newHost, idWorker, taskName, fileTask, key);
 		//interrupt the old thread
@@ -128,4 +156,5 @@ public class TaskTracker extends Thread {
 		//remove from the map
 		removeTask(thread);
 	}
+	
 }

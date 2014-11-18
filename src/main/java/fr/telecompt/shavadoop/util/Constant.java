@@ -1,10 +1,14 @@
 package fr.telecompt.shavadoop.util;
 
-
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class Constant {
 
 	// Shavadoop
-	public final static String APP_VERSION = "v0.4";
+	public final static String APP_VERSION = "v1.0";
 	public final static String APP_EXTENSION = ".jar";
 	public final static String APP_JAR = "shavadoop" + "_" + APP_VERSION + APP_EXTENSION;
 	public final static String USERNAME = System.getProperty("user.name");
@@ -51,4 +55,5 @@ public class Constant {
 	public final static int BLOC_SIZE_MIN = Integer.parseInt(new PropReader().getPropValues(PropReader.BLOC_SIZE_MIN)) * BYTE_SIZE;
 	public final static int TASK_TRACKER_FREQ = Integer.parseInt(new PropReader().getPropValues(PropReader.TASK_TRACKER_FREQ));
 	public final static int TASK_TRACKER_ANSWER_TIMEOUT = Integer.parseInt(new PropReader().getPropValues(PropReader.TASK_TRACKER_ANSWER_TIMEOUT));
+
 }

@@ -9,6 +9,11 @@ import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class Main {
 		
     public static void main( String[] args )

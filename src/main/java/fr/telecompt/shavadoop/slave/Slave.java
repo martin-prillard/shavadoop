@@ -27,15 +27,16 @@ import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
 /**
- * Slave object
+ * 
+ * @author martin prillard
  *
  */
-public class Slave 
-{
+public class Slave {
+	
 	public final static String SPLIT_MAPPING_FUNCTION = "split_mapping_function";
 	public final static String SHUFFLING_MAP_FUNCTION = "shuffling_map_function";
-	private PropReader prop = new PropReader();
 	
+	private PropReader prop = new PropReader();
 	private boolean taskFinished = false;
 	private String functionName;
 	private String hostMaster;
@@ -49,7 +50,6 @@ public class Slave
 	private String idWorker;
 	private int nbWorker;
 	
-	public Slave(){}
 	
     public Slave(SSHManager _sm, String _nbWorker, String _idWorker, String _hostMaster, String _functionName, String _fileToTreat) {
     	sm = _sm;
@@ -62,6 +62,10 @@ public class Slave
     	portTaskTracker = Integer.parseInt(prop.getPropValues(PropReader.PORT_TASK_TRACKER));
     }
 	
+    
+    /**
+     * Execute a worker's task
+     */
     public void launchWork() {
     	
     	if (Constant.TASK_TRACKER) {
@@ -203,7 +207,7 @@ public class Slave
     /**
      * Count the occurence of each word in the sentence
      * @param line
-     * @return
+     * @return res
      */
     public List<List<Pair>> wordCount(int nbWorker, List<List<Pair>> mapWc, String line) {
     	//We split the line word by word
@@ -219,11 +223,12 @@ public class Slave
     	return mapWc;
     }
     
+    
     /**
      * Return the id next worker from the key
      * @param key
      * @param nbWorker
-     * @return
+     * @return id next worker
      */
     public int getIdNextWorker(String key, int nbWorker) {
     	return Math.abs((int) (Util.hash64(key) % nbWorker));
@@ -238,7 +243,6 @@ public class Slave
      * @throws IOException
      */
     private void sendDictionaryElement(String hostMaster, Map<String, Pair> partDictionary) throws UnknownHostException, IOException {
-		
         Socket socket = new Socket(hostMaster, portMasterDictionary);
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         
@@ -253,7 +257,7 @@ public class Slave
     /**
      * Group and sort maps results by key
      * @param file
-     * @return
+     * @return sorted maps
      */
     public List<Pair> shufflingMaps(String file) {
     	List<Pair> sortedMaps = new ArrayList<Pair>();
@@ -283,7 +287,7 @@ public class Slave
     
     /**
      * Reduce method in-memory
-     * @param fileToReduce
+     * @param sortedMaps
      */
     public void mappingSortedMapsInMemory(List<Pair> sortedMaps) {
 		 try {
@@ -318,14 +322,17 @@ public class Slave
          }
     }
 
+    
 	public boolean isState() {
 		return state;
 	}
 
+	
 	public void setState(boolean state) {
 		this.state = state;
 	}
 
+	
 	public boolean isTaskFinished() {
 		return taskFinished;
 	}

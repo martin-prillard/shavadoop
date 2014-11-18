@@ -10,6 +10,11 @@ import java.util.concurrent.TimeUnit;
 import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class StateSlaveManager extends Thread {
 
 	private ServerSocket ss;
@@ -25,19 +30,20 @@ public class StateSlaveManager extends Thread {
 	private String fileTask;
 	private String key;
 	
+	
 	public StateSlaveManager(TaskTracker _ts, ServerSocket _ss, SSHManager _sm, Thread _taskThread, List<String> _taskList){
 		ts = _ts;
 		ss = _ss;
 		sm = _sm;
 		thread = _taskThread;
 		taskList = _taskList;
-		
 		host = taskList.get(0);
 		idWorker = taskList.get(1);
 		taskName = taskList.get(2);
 		fileTask = taskList.get(3);
 		key = taskList.get(4);
 	}
+	
 	
 	public void run() {
 		
@@ -76,17 +82,17 @@ public class StateSlaveManager extends Thread {
 				
 			} catch (Exception e) {e.printStackTrace();}
 		}
-    	
 	}
+	
 	
 	/**
 	 * In the case where the worker task is finished
-	 * @param thread
 	 */
 	public void caseWorkerTaskIsFinished() {
 		ts.removeTask(thread);
 		taskFinished = true;
 	}
+	
 	
 	/**
 	 * In the case where the worker is dead

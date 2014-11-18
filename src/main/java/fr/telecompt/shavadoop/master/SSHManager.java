@@ -24,6 +24,11 @@ import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class SSHManager {
 	
 	private List<String> hostsNetwork;
@@ -38,6 +43,7 @@ public class SSHManager {
 	private String homeDirectory = System.getProperty("user.home");
 	private String ipAdress;
 	private Set<String> initializedHost = new HashSet<String>();
+	
 	
 	/**
 	 * Initialize the SSH manager
@@ -68,12 +74,9 @@ public class SSHManager {
 	
 	/**
 	 * Return x hosts alive
-	 * @param hosts
-	 * @param nbHost
-	 * @param shellPort
-	 * @param usernameMaster
-	 * @param dsaKey
-	 * @return
+	 * @param nbWorker
+	 * @param random
+	 * @return list host's cores alive
 	 */
 	public List<String> getHostAliveCores(int nbWorker, boolean random) {
 		
@@ -142,8 +145,7 @@ public class SSHManager {
 		
 		// transfert the jar program if needed
 		FileTransfert ft = new FileTransfert(this, host, Constant.PATH_SHAVADOOP_JAR, Constant.PATH_JAR, true);
-		ft.transfertFileScp();
-		
+		ft.transferFileScp();
 		
 		initializedHost.add(host);
 	}
@@ -152,9 +154,6 @@ public class SSHManager {
 	/**
 	 * Test if a host is alive
 	 * @param host
-	 * @param shellPort
-	 * @param usernameMaster
-	 * @param dsaKey
 	 * @return true if it's alive
 	 */
 	public boolean isAlive(String host) {
@@ -165,9 +164,7 @@ public class SSHManager {
 			Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
 			new Shell.Plain(shell).exec(cmd);
 			alive = true;
-		} catch (Exception e) {
-			// System.out.println("Fail to connect to " + host);
-		}
+		} catch (Exception e) {} // Fail to connect to the host
 		return alive;
 	}
 	
@@ -193,11 +190,11 @@ public class SSHManager {
 	}
 	
 	
-    /**
-     * Return list of hostname from a file
-     * @param fileIpAdress
-     * @return
-     */
+	/**
+	 * Return list of hostname from a file
+	 * @param random
+	 * @return list hosts from the file
+	 */
     public List<String> getHostFromFile(boolean random) {
     	List<String> hostnameMappers = new ArrayList<String>();
 
@@ -296,7 +293,7 @@ public class SSHManager {
 	/**
 	 * Return true if the worker is the master
 	 * @param worker
-	 * @return
+	 * @return true if it's the master
 	 */
 	public boolean isLocal(String worker) {
 		boolean local = false;
@@ -307,23 +304,29 @@ public class SSHManager {
 		return local;
 	}
 
+	
 	public String getDsaKey() {
 		return dsaKey;
 	}
 
+	
 	public String getHostFull() {
 		return hostFull;
 	}
+	
 	
 	public int getShellPort() {
 		return shellPort;
 	}
 
+	
 	public String getUsername() {
 		return username;
 	}
 
+	
 	public String getHost() {
 		return host;
 	}
+	
 }

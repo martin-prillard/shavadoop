@@ -11,17 +11,24 @@ import java.util.concurrent.TimeUnit;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class DictionaryManager extends Thread {
 
 	private int portMaster;
 	private int nbWorkerMappers;
 	private Map<String, HashSet<Pair>> dictionary;
 	
+	
 	public DictionaryManager(int _portMaster, int _nbWorkerMappers, Map<String, HashSet<Pair>> _dictionary) {
 		portMaster = _portMaster;
 		nbWorkerMappers = _nbWorkerMappers;
 		dictionary = _dictionary;
 	}
+	
 	
 	public void run() {
 		ServerSocket ss = null;
@@ -51,4 +58,5 @@ public class DictionaryManager extends Thread {
 			} catch (IOException e) {e.printStackTrace();}
 		}
 	}
+	
 }

@@ -23,10 +23,16 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class Util {
 
+	
 	/**
-	 * Create file from map
+	 * Write a file from map
 	 * @param nameFile
 	 * @param content
 	 */
@@ -49,6 +55,12 @@ public class Util {
 		catch (Exception e){e.printStackTrace();}
 	}
 	
+	
+	/**
+	 * Write a file from list of string
+	 * @param nameFile
+	 * @param content
+	 */
 	public static void writeFile(String nameFile, List<String> content) {
 		try {
 			FileWriter fw = new FileWriter(nameFile);
@@ -66,6 +78,12 @@ public class Util {
 		catch (Exception e){e.printStackTrace();}
 	}
 	
+	
+	/**
+	 * Write a file from list of pair
+	 * @param nameFile
+	 * @param content
+	 */
 	public static void writeFileFromPair(String nameFile, List<Pair> content) {
       	 // If the file exist, we concat
       	 if(new File(nameFile).exists()) {
@@ -100,11 +118,12 @@ public class Util {
       	 }
 	}
 	
+	
 	/**
 	 * Create a directory
 	 * @param file
 	 */
-	public static void createDirectory(File file) {
+	private static void createDirectory(File file) {
 	    // if the directory does not exist, create it
 	    if (!file.exists()) {
 	     try{
@@ -113,16 +132,23 @@ public class Util {
 	    }
 	}
 	
+	
 	/**
 	 * Clean the directory
 	 * @param file
 	 */
-	public static void cleanDirectory(File file) {
+	private static void cleanDirectory(File file) {
 		try {
 			FileUtils.cleanDirectory(file);
 		} catch (IOException e) {e.printStackTrace();}
 	}
 	
+	
+	/**
+	 * Create and clean a directory
+	 * @param pathRepoRes
+	 * @param clean
+	 */
 	public static void initializeResDirectory(String pathRepoRes, boolean clean) {
 		Pattern paternRootPath = Pattern.compile(Constant.PATH_ROOT);
 		Matcher matcherRootPath = paternRootPath.matcher(pathRepoRes);
@@ -155,14 +181,7 @@ public class Util {
     	return clean;
     }
     
-	public static ExecutorService fixedThreadPoolWithQueueSize(int nThreads, int queueSize) {
-	    return new ThreadPoolExecutor(nThreads, nThreads,
-	                                  5000L, TimeUnit.MILLISECONDS,
-	                                  new ArrayBlockingQueue<Runnable>(queueSize, true), 
-	                                  new ThreadPoolExecutor.CallerRunsPolicy());
-	}
-	
-	
+    
 	/**
 	 * Clean a text
 	 * @param fileInput
@@ -193,11 +212,26 @@ public class Util {
 		} catch (Exception e) {e.printStackTrace();} 
 		
 	}
+    
+	
+    /**
+     * Create a exector service with n threads running max and n threads max in queue
+     * @param nThreads
+     * @param queueSize
+     * @return executor service
+     */
+	public static ExecutorService fixedThreadPoolWithQueueSize(int nThreads, int queueSize) {
+	    return new ThreadPoolExecutor(nThreads, nThreads,
+	                                  5000L, TimeUnit.MILLISECONDS,
+	                                  new ArrayBlockingQueue<Runnable>(queueSize, true), 
+	                                  new ThreadPoolExecutor.CallerRunsPolicy());
+	}
+
 	
 	/**
 	 * get the number of line of the file
 	 * @param file
-	 * @return
+	 * @return number of line for this file
 	 */
 	public static int getFileNumberLine(String file) {
 		int nbLine = 0;
@@ -213,13 +247,15 @@ public class Util {
         return nbLine;
 	}
 	
-    /**
-     * Split a file by line
-     * @param file
-     * @param nbLineByHost
-     * @param restLineByHost
-     * @param filesToMap
-     */
+	
+	/**
+	 * Split a file by line
+	 * @param file
+	 * @param nbLineByHost
+	 * @param restLineByHost
+	 * @param nbWorkerMappers
+	 * @return list files splitted
+	 */
     public static List<String> splitByLineFile(String file, int nbLineByHost, int restLineByHost, int nbWorkerMappers) {
     	List<String> filesToMap = new ArrayList<String>();
     	
@@ -256,6 +292,7 @@ public class Util {
 		} catch (IOException e) {e.printStackTrace();}
         return filesToMap;
     }
+    
     
     /**
      * Split large file by bloc
@@ -305,10 +342,11 @@ public class Util {
 		return filesToMap;
     }
     
+    
     /**
      * FNVHash
      * @param k
-     * @return
+     * @return hashage
      */
     public static long hash64(final String k) {
     	long FNV_64_INIT = 0xcbf29ce484222325L;
@@ -322,12 +360,18 @@ public class Util {
         return rv;
     }
     
-//    public static long hash64(final String k) {
-//    	long hash=7;
-//    	for (int i=0; i < k.length(); i++) {
-//    	    hash = hash*31+(k.charAt(i));
-//    	}
-//    	return hash;
-//    }
+    
+    /**
+     * Simple hashage function
+     * @param k
+     * @return hashage
+     */
+    public static long simpleHash(final String k) {
+    	long hash=7;
+    	for (int i=0; i < k.length(); i++) {
+    	    hash = hash*31+(k.charAt(i));
+    	}
+    	return hash;
+    }
 	
 }

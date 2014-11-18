@@ -3,11 +3,16 @@ package fr.telecompt.shavadoop.thread;
 import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
 
-
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class FileTransfert extends ShellThread {
 	
 	private String destFile;
 	private boolean fromLocal;
+	
 	
 	public FileTransfert(SSHManager _sm, String _HostOwner, String _fileToTreat, String _destFile, boolean _fromLocal) {
 		super(_sm, _HostOwner, _fileToTreat);
@@ -15,11 +20,16 @@ public class FileTransfert extends ShellThread {
 		fromLocal = _fromLocal;
 	}
 	
+	
 	public void run() {
-		transfertFileScp();
+		transferFileScp();
 	}
 	
-	public void transfertFileScp() {
+	
+	/**
+	 * Transfer a file with scp
+	 */
+	public void transferFileScp() {
 		String cmd = null;
 		if (fromLocal) {
 			cmd = "scp " + fileToTreat + " " + username + "@" + distantHost + ":" + destFile;

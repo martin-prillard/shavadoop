@@ -12,16 +12,23 @@ import java.util.Map.Entry;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class ListenerDictionary extends Thread {
 
 	private ServerSocket ss;
 	private Map<String, HashSet<Pair>> dictionary;
 	private Map<String, HashSet<Pair>> partDictionary = new HashMap<String, HashSet<Pair>>();
 	
+	
 	public ListenerDictionary(ServerSocket _ss, Map<String, HashSet<Pair>> _dictionary){
 		 ss = _ss;
 		 dictionary = _dictionary;
 	}
+	
 	
 	public void run() {
 		Socket socket = null;
@@ -69,6 +76,14 @@ public class ListenerDictionary extends Thread {
 		}
 	}
 	
+	
+	/**
+	 * Concat a key value in a hashmap
+	 * @param map
+	 * @param key
+	 * @param hostOwner
+	 * @param value
+	 */
 	public void concatToHashMap(Map<String, HashSet<Pair>> map, String key, String hostOwner, String value) {
         if (map.keySet().contains(key)) {
      	    map.get(key).add(new Pair(hostOwner, value));

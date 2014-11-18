@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class PropReader {
 
 	private final String URL_CONFIG_FILE = "config.properties";

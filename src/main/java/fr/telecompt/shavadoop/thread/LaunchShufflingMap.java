@@ -11,11 +11,17 @@ import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.slave.Slave;
 import fr.telecompt.shavadoop.util.Constant;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class LaunchShufflingMap extends ShellThread {
 
 	private String hostMapper;
 	private String idWorker;
 	private String nbWorker;
+	
 	
 	public LaunchShufflingMap(SSHManager _sm, String _nbWorker, String _distantHost, String _shufflingDictionaryFile, String _hostMapper, String _idWorker) {
 		super(_sm, _distantHost, _shufflingDictionaryFile);
@@ -23,6 +29,7 @@ public class LaunchShufflingMap extends ShellThread {
 		hostMapper = _hostMapper;
 		idWorker = _idWorker;
 	}
+	
 	
     @Override
     public void interrupt() {
@@ -53,7 +60,7 @@ public class LaunchShufflingMap extends ShellThread {
 					String destFile = Constant.PATH_REPO_RES 
 							+ FilenameUtils.getBaseName(fileToTreat);
 					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
-					ft.transfertFileScp();
+					ft.transferFileScp();
 					fileToTreat = destFile;
 				}
 				
@@ -75,4 +82,5 @@ public class LaunchShufflingMap extends ShellThread {
             }
         }
 	}
+	
 }

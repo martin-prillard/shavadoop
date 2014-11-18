@@ -9,15 +9,22 @@ import java.net.Socket;
 
 import fr.telecompt.shavadoop.util.Constant;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class CheckStateSlave extends Thread {
 
 	private Socket socket;
 	private StateSlaveManager stateSlaveManager;
 	
+	
 	public CheckStateSlave(StateSlaveManager _stateSlaveManager, Socket _socket) {
 		stateSlaveManager = _stateSlaveManager;
 		socket = _socket;
 	}
+	
 	
 	public void run() {
 		if (!stateSlaveManager.getTaskFinished()) {
@@ -52,6 +59,7 @@ public class CheckStateSlave extends Thread {
 
 	}
 	
+	
 	/**
 	 * Send request to the slave to know his state
 	 * @param socket
@@ -69,4 +77,5 @@ public class CheckStateSlave extends Thread {
 			e.printStackTrace();
 		}
 	}
+	
 }

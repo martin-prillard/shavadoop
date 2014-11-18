@@ -6,6 +6,11 @@ import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 
+/**
+ * 
+ * @author martin prillard
+ *
+ */
 public class ShellThread extends Thread {
 
 	protected int shellPort;
@@ -17,6 +22,7 @@ public class ShellThread extends Thread {
 	protected String username;
 	protected SSHManager sm;
 	protected boolean local = false;
+	
 	
 	public ShellThread(SSHManager _sm, String _distantHost, String _fileToTreat) {
 		sm = _sm;
@@ -33,6 +39,17 @@ public class ShellThread extends Thread {
 		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
 	}
     
+	
+	/**
+	 * Generate a cmd command to execute the shavadoop's jar
+	 * @param pathJar
+	 * @param nbWorker
+	 * @param host
+	 * @param method
+	 * @param fileToTreat
+	 * @param idWorker
+	 * @return cmd shavadoop jar
+	 */
 	public String getCmdJar(String pathJar, String nbWorker, String host, String method, String fileToTreat, String idWorker) {
 		return "java -jar" 
 				+ Constant.SEP_WORD

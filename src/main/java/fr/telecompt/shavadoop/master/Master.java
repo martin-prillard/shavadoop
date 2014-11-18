@@ -31,7 +31,8 @@ import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
 
 /**
- * Master object
+ * 
+ * @author martin prillard
  *
  */
 public class Master
@@ -129,10 +130,12 @@ public class Master
 	}
 	
 	
-    /**
-     * Split the original file
-     * @param originalFile
-     */
+	/**
+	 * Split the original file
+	 * @param workers
+	 * @param fileToTreat
+	 * @return list files splitted
+	 */
     public List<String> inputSplitting(List<String> workers, String fileToTreat) {
     	
     	List<String> filesToMap;
@@ -181,9 +184,9 @@ public class Master
 
     /**
      * Launch a thread to execute map on each distant computer
-     * @param dsaKey
-     * @param fileIpAdress
-     * @return grouped dictionary
+     * @param workersMapperCores
+     * @param filesToMap
+     * @return dictionary mapping
      */
     public Map<String, HashSet<Pair>> launchSplitMappingThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		//Object to synchronize threads
@@ -236,8 +239,9 @@ public class Master
     
     /**
      * Launch a thread to execute shuffling map on each distant computer
-     * @param dictionary
-     * @throws IOException 
+     * @param workersCores
+     * @return dictionary reducing
+     * @throws IOException
      */
     public Map<String, String> launchShufflingMapThreads(List<String> workersCores) throws IOException {
 		// Host who have a reduce file to assemble
