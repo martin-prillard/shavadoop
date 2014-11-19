@@ -70,7 +70,6 @@ public class ShufflingMapThread extends Thread {
      * Combine group and sort maps results by key
      * and reduce method in-memory
      * @param file
-     * @return sorted maps
      */
     public void reduce(String file) {
     	

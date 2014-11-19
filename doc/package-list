@@ -1,6 +1,7 @@
-fr.telecompt.shavadoop.main
+fr.telecompt.shavadoop
 fr.telecompt.shavadoop.master
+fr.telecompt.shavadoop.master.tasktracker
+fr.telecompt.shavadoop.network
 fr.telecompt.shavadoop.slave
-fr.telecompt.shavadoop.tasktracker
-fr.telecompt.shavadoop.thread
+fr.telecompt.shavadoop.slave.tasktracker
 fr.telecompt.shavadoop.util
