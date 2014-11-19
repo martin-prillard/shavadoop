@@ -33,8 +33,8 @@ import fr.telecompt.shavadoop.util.Util;
  * @author martin prillard
  *
  */
-public class Master
-{
+public class Master {
+	
 	private String fileInputCleaned = null;
 	private int portMasterDictionary;
 	private int portTaskTracker;
@@ -95,13 +95,13 @@ public class Master
 		fileInputCleaned = Constant.PATH_F_INPUT_CLEANED;
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Variables initialized");
-			// get workers
 			System.out.println("Get workers core alive : ");
 		}
 
     	try {
 			Constant.PATH_SHAVADOOP_JAR = URLDecoder.decode(Constant.PATH_SHAVADOOP_JAR_TODECODE, "UTF-8");
-		} catch (UnsupportedEncodingException e) {e.printStackTrace();}
+    	} catch (UnsupportedEncodingException e) {e.printStackTrace();}
+    	// get workers
 		workersCores = sm.getHostAliveCores(nbWorkerMax, false);
 		if (Constant.MODE_SCP_FILES) {
 			Constant.PATH_SHAVADOOP_JAR = Constant.PATH_JAR;
@@ -109,7 +109,17 @@ public class Master
 		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Workers core : " + workersCores); 
+    		System.out.println("Data cleaning :");
+    	}
+    	// clean the input text
+		Util.cleanText(fileToTreat, fileInputCleaned);
+		if (Constant.MODE_DEBUG) {
+			System.out.println("File " + fileToTreat + " cleaned in  " + fileInputCleaned);
+		}
+		
+		if (Constant.MODE_DEBUG) {
 			totalTime = (double) ((System.currentTimeMillis() - st) / 1000.0) % 60;
+			System.out.println();
 			System.out.println(Constant.APP_DEBUG_BLOC + " Initialize and clean in " + totalTime + " secondes " + Constant.APP_DEBUG_BLOC);
 			System.out.println();
 			System.out.println();
@@ -128,19 +138,6 @@ public class Master
     		startTime = System.currentTimeMillis();
     		System.out.println();
     	}
-    			
-		// clean the input text
-    	if (Constant.MODE_DEBUG) {
-    		System.out.println(Constant.APP_DEBUG_TITLE + " Data cleaning");
-    		st = System.currentTimeMillis();
-    	}
-		Util.cleanText(fileToTreat, fileInputCleaned);
-		if (Constant.MODE_DEBUG) {
-			totalTime = (double) ((System.currentTimeMillis() - st) / 1000.0) % 60;
-			System.out.println("File " + fileToTreat + " cleaned in  " + fileInputCleaned);
-			System.out.println(Constant.APP_DEBUG_TITLE + " done in " + totalTime + " secondes");
-			System.out.println();
-		}
 		
         // split the file : master
 		if (Constant.MODE_DEBUG) {
@@ -230,13 +227,13 @@ public class Master
          if (nbWorkerMappers > totalBloc) {
         	 nbWorkerMappers = totalBloc;
          }
-         // the rest of the division for the last host
-         int restBlocByHost = totalBloc % nbWorkerMappers;
-         // Calculate the number of lines for each host
-         int nbBlocByHost = (totalBloc - restBlocByHost) / (nbWorkerMappers);
          
          // split by line
          if (sizeFileToTreat < Constant.BLOC_SIZE_MIN) {
+             // the rest of the division for the last host
+             int restBlocByHost = totalBloc % nbWorkerMappers;
+             // Calculate the number of lines for each host
+             int nbBlocByHost = (totalBloc - restBlocByHost) / (nbWorkerMappers);
              if (Constant.MODE_DEBUG) System.out.println("Nb line to tread : " + (totalBloc));
              if (Constant.MODE_DEBUG) System.out.println("Nb line by host mapper : " + (nbBlocByHost));
              if (Constant.MODE_DEBUG) System.out.println("Nb line for the last host mapper : " + (restBlocByHost));
@@ -244,8 +241,6 @@ public class Master
          } else {
         	// split by bloc
              if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) to tread : " + (totalBloc));
-             if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) by host mapper : " + (nbBlocByHost));
-             if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) for the last host mapper : " + (restBlocByHost));
              filesToMap = Util.splitLargeFile(fileToTreat);
          }
 		 
@@ -272,9 +267,9 @@ public class Master
 		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
 		
 		// dictionary
-    	Map<String, HashSet<Pair>> dictionaryMapping = new HashMap<String, HashSet<Pair>>();
+    	Map<String, HashSet<Pair>> dicoMapping = new HashMap<String, HashSet<Pair>>();
     	// listener to get part dictionary from the worker mappers
-    	es.execute(new DictionaryManager(portMasterDictionary, nbWorkerMappers, dictionaryMapping));
+    	es.execute(new DictionaryManager(portMasterDictionary, nbWorkerMappers, dicoMapping));
     	
     	int idWorkerMapperCore = 0;
     	
@@ -282,6 +277,7 @@ public class Master
     	for (int i = 0; i < filesToMap.size(); i++) {
     		int id = i;
     		if (nbWorker <= filesToMap.size()) {
+    			// for blocs, it's sequential
     			id = filesToMap.size() % nbWorker;
     		}
     		String worker = workersMapperCores.get(id);
@@ -302,7 +298,7 @@ public class Master
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}
 
-		return dictionaryMapping;
+		return dicoMapping;
     }
     
     
@@ -314,13 +310,13 @@ public class Master
      */
     private Map<String, String> launchShufflingMapThreads(List<String> workersCores) throws IOException {
 		// host who have a reduce file to assemble
-    	Map<String, String> dictionaryReducing = new HashMap<String, String>();
+    	Map<String, String> dicoReducing = new HashMap<String, String>();
 		
 		// object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
 		TaskTracker ts = null;
 		if (Constant.TASK_TRACKER) {
-			ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dictionaryReducing);
+			ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dicoReducing);
 			es.execute(ts);
 		}
 		
@@ -347,7 +343,7 @@ public class Master
 
 			write.close();
 			
-			dictionaryReducing.put(Integer.toString(idWorkerReducerCore), workerReducer);
+			dicoReducing.put(Integer.toString(idWorkerReducerCore), workerReducer);
 			
 			// launch shuffling map process
 			Thread smt = new LaunchShufflingMap(sm, String.valueOf(nbWorker), workerReducer, shufflingDictionaryFile, sm.getHost(), Integer.toString(idWorkerReducerCore));
@@ -365,7 +361,7 @@ public class Master
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}
 		
-		return dictionaryReducing;
+		return dicoReducing;
     }
     
     

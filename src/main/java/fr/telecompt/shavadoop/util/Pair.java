@@ -7,15 +7,13 @@ import java.io.Serializable;
  * @author martin prillard
  *
  */
-public class Pair implements Serializable
-{
+public class Pair implements Serializable {
 
    private static final long serialVersionUID = 1L;
    private String val1;
    private String val2;
 
-   public Pair(String _val1, String _val2)
-   {
+   public Pair(String _val1, String _val2) {
       this.val1 = _val1;
       this.val2 = _val2;
    }
@@ -40,12 +38,15 @@ public class Pair implements Serializable
 	   
     @Override
     public boolean equals(Object arg0) {
-        if (this == arg0)
+        if (this == arg0) {
             return true;
-        if (arg0 == null)
+        }
+        if (arg0 == null) {
             return false;
-        if (getClass() != arg0.getClass())
+        }
+        if (getClass() != arg0.getClass()) {
             return false;
+        }
         
         Pair other = (Pair) arg0;
         if (this.val1.equalsIgnoreCase(other.val1) && this.val2.equalsIgnoreCase(other.val2)) {

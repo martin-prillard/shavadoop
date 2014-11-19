@@ -67,7 +67,7 @@ public class SSHManager {
 		} catch (UnknownHostException e) {e.printStackTrace();}
 		
     	// get dsa key
-		dsaKey = getDsaKey(dsaFile);
+		dsaKey = getDsaKeyContent(dsaFile);
 	}
 	
 	
@@ -231,8 +231,8 @@ public class SSHManager {
      * @param dsaFile
      * @return dsa key
      */
-	public String getDsaKey(String dsaFile) {
-		String dsaKey = null;	
+	public String getDsaKeyContent(String dsaFile) {
+		String dsaKeyContent = null;	
 
 		try {
 			InputStream ips=new FileInputStream(dsaFile); 
@@ -240,7 +240,7 @@ public class SSHManager {
 			BufferedReader br=new BufferedReader(ipsr);
 			String line;
 			while((line=br.readLine())!=null){
-				dsaKey += line + "\n";
+				dsaKeyContent += line + "\n";
 			}
 			br.close();
 			if (Constant.MODE_DEBUG) System.out.println("Dsa key found");
@@ -248,7 +248,7 @@ public class SSHManager {
 			System.out.println("No dsa file");
 		}
 
-		return dsaKey;
+		return dsaKeyContent;
 	}
 
 	
@@ -258,7 +258,7 @@ public class SSHManager {
 	 */
 	public void generateNetworkIpAdress(String regex) {
 		
-		String cmdLine = "nmap -sn " + ipAdress + "/24 | awk \'{print $5}\' | grep -o " + prop.getPropValues(PropReader.NETWORK_IP_REGEX);
+		String cmdLine = "nmap -sn " + ipAdress + "/24 | awk \'{print $5}\' | grep -o " + regex;
 		
 		try {
 			String line;
@@ -271,16 +271,16 @@ public class SSHManager {
 			Process p = Runtime.getRuntime().exec(cmd);
 			p.waitFor();
 			
-			List<String> ipAdress = new ArrayList<String>();
+			List<String> listIpAdress = new ArrayList<String>();
 			
 			BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()) );
 			while ((line = in.readLine()) != null) {
-				ipAdress.add(line);
+				listIpAdress.add(line);
 			}
 			in.close();
 			
 			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmdLine);
-			Util.writeFile(Constant.PATH_NETWORK_IP_DEFAULT_FILE, ipAdress);
+			Util.writeFile(Constant.PATH_NETWORK_IP_DEFAULT_FILE, listIpAdress);
 			
 		} catch (Exception e) {
 			e.printStackTrace();

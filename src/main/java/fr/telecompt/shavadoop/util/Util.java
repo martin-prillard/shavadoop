@@ -199,12 +199,10 @@ public class Util {
 			PrintWriter write = new PrintWriter(bw); 
 			String line;
 	
-			while((line = br.readLine()) != null)
-			{ 
+			while((line = br.readLine()) != null) { 
 			    line = cleanLine(line);
 			    // don't write out blank lines
-			    if (!line.equals("") || !line.isEmpty()) 
-			    {
+			    if (!line.equals("") || !line.isEmpty()) {
 			        write.println(line);
 			    }
 			} 
