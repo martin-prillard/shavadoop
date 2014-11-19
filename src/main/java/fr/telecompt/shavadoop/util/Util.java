@@ -120,16 +120,18 @@ public class Util {
 	
 	
 	/**
-	 * Create a directory
+	 * Create a directory recursively
 	 * @param file
 	 */
 	private static void createDirectory(File file) {
 	    // if the directory does not exist, create it
-	    if (!file.exists()) {
-	     try{
-	    	 file.mkdir();
-	       } catch(Exception e){e.printStackTrace();}  
+		File parent = new File(file.getParent());
+	    if (parent != null && !parent.exists()) {
+	    	createDirectory(parent);
 	    }
+	    try{
+	    	file.mkdir();
+        } catch(Exception e){e.printStackTrace();}  
 	}
 	
 	

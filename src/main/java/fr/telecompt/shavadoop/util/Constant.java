@@ -35,7 +35,8 @@ public class Constant {
 	// Mode
 	public final static boolean MODE_DEBUG = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_DEBUG));
 	public final static boolean MODE_SCP_FILES = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_SCP_FILES));
-	public final static String APP_DEBUG_TITLE = "-------------------------------------------------------";
+	public final static String APP_DEBUG_TITLE = "------------------------";
+	public final static String APP_DEBUG_BLOC = "**************************************************";
 	
 	// Separator
 	public final static String SEP_NAME_FILE = "_";

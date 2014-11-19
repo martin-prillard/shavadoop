@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.thread;
+package fr.telecompt.shavadoop.master;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

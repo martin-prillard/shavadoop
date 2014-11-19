@@ -1,8 +1,7 @@
-package fr.telecompt.shavadoop.thread;
+package fr.telecompt.shavadoop.network;
 
 import com.jcabi.ssh.Shell;
 
-import fr.telecompt.shavadoop.master.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 

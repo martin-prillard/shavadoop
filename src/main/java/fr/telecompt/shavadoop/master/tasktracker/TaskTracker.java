@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.tasktracker;
+package fr.telecompt.shavadoop.master.tasktracker;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -10,10 +10,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import fr.telecompt.shavadoop.master.SSHManager;
+import fr.telecompt.shavadoop.master.LaunchShufflingMap;
+import fr.telecompt.shavadoop.master.LaunchSplitMapping;
+import fr.telecompt.shavadoop.network.SSHManager;
 import fr.telecompt.shavadoop.slave.Slave;
-import fr.telecompt.shavadoop.thread.LaunchShufflingMap;
-import fr.telecompt.shavadoop.thread.LaunchSplitMapping;
 import fr.telecompt.shavadoop.util.Constant;
 
 /**
@@ -41,6 +41,12 @@ public class TaskTracker extends Thread {
 		portTaskTracker = _portTaskTracker;
 		nbWorker = _nbWorker;
 		dictionaryReducing = _dictionaryReducing;
+		
+		esTaskTracker = Executors.newCachedThreadPool();
+		try {
+			ss = new ServerSocket(portTaskTracker);
+			ss.setReuseAddress(true);
+		} catch (IOException e) {e.printStackTrace();}
 	}
 	
 	
@@ -105,12 +111,7 @@ public class TaskTracker extends Thread {
 	 * Check if the workers are alive
 	 */
 	public void check() {
-		esTaskTracker = Executors.newCachedThreadPool();
-		try {
-			ss = new ServerSocket(portTaskTracker);
-			ss.setReuseAddress(true);
-		} catch (IOException e) {e.printStackTrace();}
-		
+		//wait all state slave manager threads
 		try {
 			esTaskTracker.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}

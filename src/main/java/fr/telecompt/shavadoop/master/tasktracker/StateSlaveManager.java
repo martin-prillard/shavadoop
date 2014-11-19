@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.tasktracker;
+package fr.telecompt.shavadoop.master.tasktracker;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import fr.telecompt.shavadoop.master.SSHManager;
+import fr.telecompt.shavadoop.network.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
 
 /**

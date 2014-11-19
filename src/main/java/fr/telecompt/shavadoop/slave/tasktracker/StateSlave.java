@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.tasktracker;
+package fr.telecompt.shavadoop.slave.tasktracker;
 
 import java.io.BufferedReader;
 import java.io.IOException;

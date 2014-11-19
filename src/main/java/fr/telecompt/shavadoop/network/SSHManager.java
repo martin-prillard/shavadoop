@@ -1,4 +1,4 @@
-package fr.telecompt.shavadoop.master;
+package fr.telecompt.shavadoop.network;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
-import fr.telecompt.shavadoop.thread.FileTransfert;
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.PropReader;
 import fr.telecompt.shavadoop.util.Util;
@@ -50,7 +49,7 @@ public class SSHManager {
 	 */
 	public void initialize() {
 		
-		if (Constant.MODE_DEBUG) System.out.println(Constant.APP_DEBUG_TITLE + " Initialize SSH Manager " + Constant.APP_DEBUG_TITLE);
+		if (Constant.MODE_DEBUG) System.out.println("Initialize SSH Manager :");
 
 		shellPort = Integer.parseInt(prop.getPropValues(PropReader.PORT_SHELL));
 		
