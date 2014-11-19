@@ -300,7 +300,7 @@ public class Util {
      * Split large file by bloc
      * @param file
      */
-    public static List<String> splitLargeFile(String file, int nbBlocByHost, int restBlocByHost, int nbWorkerMappers) {
+    public static List<String> splitLargeFile(String file) {
     	List<String> filesToMap = new ArrayList<String>();
     	File inputFile = new File(file);
 		FileInputStream inputStream;

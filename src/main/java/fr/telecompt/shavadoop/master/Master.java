@@ -246,7 +246,7 @@ public class Master
              if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) to tread : " + (totalBloc));
              if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) by host mapper : " + (nbBlocByHost));
              if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) for the last host mapper : " + (restBlocByHost));
-             filesToMap = Util.splitLargeFile(fileToTreat, nbBlocByHost, restBlocByHost, nbWorkerMappers);
+             filesToMap = Util.splitLargeFile(fileToTreat);
          }
 		 
 		 return filesToMap;
@@ -280,10 +280,15 @@ public class Master
     	
 		// for each files to map
     	for (int i = 0; i < filesToMap.size(); i++) {
-	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), workersMapperCores.get(i), filesToMap.get(i), sm.isLocal(workersMapperCores.get(i)), sm.getHost(), Integer.toString(idWorkerMapperCore));
+    		int id = i;
+    		if (nbWorker <= filesToMap.size()) {
+    			id = filesToMap.size() % nbWorker;
+    		}
+    		String worker = workersMapperCores.get(id);
+	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), worker, filesToMap.get(i), sm.isLocal(worker), sm.getHost(), Integer.toString(idWorkerMapperCore));
 			es.execute(smt);
 			if (Constant.TASK_TRACKER) {
-				ts.addTask(smt, workersMapperCores.get(i), Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
+				ts.addTask(smt, worker, Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
 			}
 			++idWorkerMapperCore;
     	}
@@ -405,7 +410,13 @@ public class Master
 	             while ((line = read.readLine()) != null) {
 		            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
 		            // add each line to our hashmap
-		            finalResult.put(words[0], Integer.parseInt(words[1]));
+		            String word = words[0];
+		            int counter = Integer.parseInt(words[1]);
+	 				if (finalResult.keySet().contains(word)) {
+	 					finalResult.put(word, finalResult.get(word) + counter);
+	 				} else {
+	 					finalResult.put(word, counter);
+	 				}
 	             } 
 	        	 
 	             fic.close();
