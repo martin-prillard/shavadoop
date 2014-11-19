@@ -85,7 +85,7 @@ public class Util {
 	 * @param content
 	 */
 	public static void writeFileFromPair(String nameFile, List<Pair> content) {
-      	 // If the file exist, we concat
+      	 // if the file exist, we concat
       	 if(new File(nameFile).exists()) {
       		try(
       			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(nameFile, true)))) {
@@ -265,27 +265,27 @@ public class Util {
             String line = null;
             int nbFile = 0;
             
-        	// Content of the file
+        	// content of the file
             List<String> content = new ArrayList<String>();
             FileReader fic = new FileReader(new File(file));
             BufferedReader read = new BufferedReader(fic);
             
 			while ((line = read.readLine()) != null) {
-			 // Add line by line to the content file
+			 // add line by line to the content file
 			 content.add(line);
-			 // Write the complete file by block or if it's the end of the file
+			 // write the complete file by block or if it's the end of the file
 			 if ((content.size() == nbLineByHost && nbFile < nbWorkerMappers - 1)
 					 || (content.size() == nbLineByHost + restLineByHost && nbFile == nbWorkerMappers - 1)) {
-			   	 //For each group of line, we write a new file
+			   	 // for each group of line, we write a new file
 			   	 ++nbFile;
 			   	 String fileToMap = Constant.PATH_F_SPLITING + nbFile;
 			   	 Util.writeFile(fileToMap, content);
 			   	 
 			   	 if (Constant.MODE_DEBUG) System.out.println("Input file splited in : " + fileToMap);
 			   	 		
-			   	 //We save names of theses files in a list
+			   	 // we save names of theses files in a list
 			   	 filesToMap.add(fileToMap);
-			   	 // Reset
+			   	 // reset
 			   	 content = new ArrayList<String>();
 			 }
 			}

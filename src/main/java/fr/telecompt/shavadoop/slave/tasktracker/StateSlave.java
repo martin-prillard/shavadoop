@@ -60,7 +60,7 @@ public class StateSlave extends Thread {
 	 */
 	public void waitRequestMaster(Socket socket) {
 
-		//Get the return message from the server
+		// get the return message from the server
 		BufferedReader in = null;
         
 		try {

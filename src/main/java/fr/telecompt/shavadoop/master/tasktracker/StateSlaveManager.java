@@ -46,7 +46,6 @@ public class StateSlaveManager extends Thread {
 	
 	
 	public void run() {
-		
 		// the distant worker is dead
 		if (!sm.isLocal(host) && !sm.isAlive(host)) {
 			caseWorkerDied();

@@ -232,7 +232,7 @@ public class SSHManager {
      * @return dsa key
      */
 	public String getDsaKey(String dsaFile) {
-		String dsaKey = "";	
+		String dsaKey = null;	
 
 		try {
 			InputStream ips=new FileInputStream(dsaFile); 

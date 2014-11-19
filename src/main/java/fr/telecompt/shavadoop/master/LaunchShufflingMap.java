@@ -40,7 +40,6 @@ public class LaunchShufflingMap extends ShellThread {
 
     
 	public void run() {
-		
         try {
 			String pathJar = Constant.PATH_SHAVADOOP_JAR;
 			String method = Slave.SHUFFLING_MAP_FUNCTION;
@@ -54,11 +53,11 @@ public class LaunchShufflingMap extends ShellThread {
 				p.waitFor();
 			// execute on a distant computer
 			} else {
-				//Connect to the distant computer
+				// connect to the distant computer
 				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
+				// MASTER DSM file -> SLAVE
 				if (Constant.MODE_SCP_FILES) {
-					// MASTER DSM file -> SLAVE
 					String destFile = Constant.PATH_REPO_RES 
 							+ FilenameUtils.getBaseName(fileToTreat);
 					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
@@ -68,7 +67,7 @@ public class LaunchShufflingMap extends ShellThread {
 				
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				
-				//Launch map process
+				// launch map process
 				new Shell.Plain(shell).exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On " + distantHost + " : " + cmd);
 			}

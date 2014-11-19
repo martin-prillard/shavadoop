@@ -37,8 +37,7 @@ public class ShufflingMapThread extends Thread {
 	
 	
 	public void run() {
-		
-		// SLAVE <- SLAVE/MASTER files
+	// SLAVE <- SLAVE/MASTER files
     	if (Constant.MODE_SCP_FILES) {
 	    	ExecutorService es = Executors.newCachedThreadPool();
 
@@ -74,8 +73,8 @@ public class ShufflingMapThread extends Thread {
      */
     public void reduce(String file) {
     	
-    	// concat data of each files in one list pair
-    	try {
+    	// Concat data of each files in one list pair
+		 try {
 				 
              FileReader fic = new FileReader(file);
              BufferedReader read = new BufferedReader(fic);

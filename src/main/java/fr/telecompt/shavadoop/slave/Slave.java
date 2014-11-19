@@ -79,7 +79,7 @@ public class Slave {
     	switch (functionName){
     	
 	    	case SPLIT_MAPPING_FUNCTION:
-	    		//Launch map method
+	    		// launch map method
 	    		splitMapping(nbWorker, hostMaster, fileToTreat);
 	    		break;
 	    		
@@ -88,6 +88,7 @@ public class Slave {
 	    		int threadMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_BY_WORKER));
 	    		int threadQueueMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_QUEUE_MAX_BY_WORKER));
 	    		
+	    		// launch shuffling map thread
 	    		launchShufflingMapThread(threadMaxByWorker, threadQueueMaxByWorker);
 	    		
     			// write the RM file
@@ -98,10 +99,10 @@ public class Slave {
            			 + sm.getHostFull();
     			Util.writeFile(fileToAssemble, finalMapsInMemory);
 	    		
-    			// send this file to the master
+	    		// SLAVE file -> MASTER
         		if (Constant.MODE_SCP_FILES) { 
         			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
-		    		// SLAVE file -> MASTER
+
         			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true));
 					esScpFile.shutdown();
 		    		try {
@@ -111,7 +112,6 @@ public class Slave {
 		    			state = false;
 		    		}
 	    		}
-        		
 	    		break;
     	}
     	
@@ -167,7 +167,7 @@ public class Slave {
         		 }
         	 }
         	 
-        	 // Send dictionary with UNIQUE key (word) and hostname to the master
+        	 // send dictionary with UNIQUE key (word) and hostname to the master
         	 sendDictionaryElement(hostMaster, partDictionary);
         	 
          } catch (Exception e) {
@@ -183,7 +183,7 @@ public class Slave {
      * @return res
      */
     private List<HashMap<String, Integer>> wordCount(int nbWorker, List<HashMap<String, Integer>> mapWc, String line) {
-    	//We split the line word by word
+    	// split the line word by word
     	String words[] = line.split(Constant.SEP_WORD);
     	
     	for (int i = 0; i < words.length; i++) {
@@ -225,7 +225,7 @@ public class Slave {
         Socket socket = new Socket(hostMaster, portMasterDictionary);
         ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         
-        // Send dictionary element
+        // send dictionary element
         out.writeObject(partDictionary);
         out.flush();
         out.close();

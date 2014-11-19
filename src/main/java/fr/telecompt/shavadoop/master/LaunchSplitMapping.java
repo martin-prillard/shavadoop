@@ -36,7 +36,6 @@ public class LaunchSplitMapping extends ShellThread {
 	
 	
 	public void run() {
-		
 		try {
 			String pathJar = Constant.PATH_SHAVADOOP_JAR;
 			String method = Slave.SPLIT_MAPPING_FUNCTION;
@@ -53,8 +52,8 @@ public class LaunchSplitMapping extends ShellThread {
 				// connect to the distant computer
 				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
+				// MASTER files -> SLAVE
 				if (Constant.MODE_SCP_FILES) {
-					// MASTER files -> SLAVE
 					String destFile = Constant.PATH_REPO_RES 
 							+ FilenameUtils.getBaseName(fileToTreat);
 					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);

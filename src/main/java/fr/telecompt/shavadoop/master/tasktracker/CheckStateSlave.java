@@ -69,7 +69,6 @@ public class CheckStateSlave extends Thread {
 	    PrintWriter out = null;
 	    try {
 	        out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-            	
             // send state
 	        out.println(Constant.MESSAGE_TASKTRACKER_REQUEST);
 	        out.flush();
