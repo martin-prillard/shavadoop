@@ -99,7 +99,7 @@ public class SSHManager {
 					hostAlive.add(host);
 					if (!initializedHost.contains(host)) {
 						initializedHost.add(host);
-						es.execute(new LaunchInitializeHost(this, es, host));
+						es.execute(new LaunchInitializeHost(this, es, host, true));
 					}
 				} else if (!isLocal(host) && isAlive(host)) {
 					for (int i = 0; i < getCoresNumber(host); i++) {
@@ -108,7 +108,7 @@ public class SSHManager {
 							hostAlive.add(host);
 							if (!initializedHost.contains(host)) {
 								initializedHost.add(host);
-								es.execute(new LaunchInitializeHost(this, es, host));
+								es.execute(new LaunchInitializeHost(this, es, host, false));
 							}
 						} else {
 							break;

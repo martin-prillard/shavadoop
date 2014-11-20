@@ -30,10 +30,17 @@ public class FileTransfert extends ShellThread {
 	 */
 	public void transferFileScp() {
 		String cmd = null;
-		if (fromLocal) {
-			cmd = "rsync " + fileToTreat + " " + username + "@" + distantHost + ":" + destFile;
+		//if to local
+		if (sm.isLocal(distantHost)) {
+			cmd = "scp " + fileToTreat + " " + destFile;
 		} else {
-			cmd = "rsync " + username + "@" + distantHost + ":" + destFile + " " + fileToTreat;
+			if (fromLocal) {
+				// local to distant
+				cmd = "scp " + fileToTreat + " " + username + "@" + distantHost + ":" + destFile;
+			} else {
+				// distant to local
+				cmd = "scp " + username + "@" + distantHost + ":" + fileToTreat + " " + destFile;
+			}
 		}
 		try {
 			// Run a java app in a separate system process

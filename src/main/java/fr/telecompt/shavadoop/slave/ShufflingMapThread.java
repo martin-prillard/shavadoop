@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -28,9 +28,9 @@ public class ShufflingMapThread extends Thread {
 	private String fileToShuffling;
 	private Slave slave;
 	private SSHManager sm;
-	private Map<String, Integer> finalMapsInMemory;
+	private volatile ConcurrentHashMap<String, Integer> finalMapsInMemory;
 	
-	public ShufflingMapThread(SSHManager _sm, Slave _slave, Map<String, Integer> _finalMapsInMemory, String _hostOwner, String _fileToShuffling) {
+	public ShufflingMapThread(SSHManager _sm, Slave _slave, ConcurrentHashMap<String, Integer> _finalMapsInMemory, String _hostOwner, String _fileToShuffling) {
 		hostOwner = _hostOwner;
 		fileToShuffling = _fileToShuffling;
 		slave = _slave;
@@ -86,10 +86,10 @@ public class ShufflingMapThread extends Thread {
 	            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
 	            String word = words[0];
 	            int counter = Integer.parseInt(words[1]);
- 				if (finalMapsInMemory.keySet().contains(word)) {
- 					finalMapsInMemory.put(word, finalMapsInMemory.get(word) + counter);
+ 				if (!finalMapsInMemory.keySet().contains(word)) {
+ 					 finalMapsInMemory.putIfAbsent(word, counter);
  				} else {
- 					finalMapsInMemory.put(word, counter);
+ 					finalMapsInMemory.replace(word, finalMapsInMemory.get(word), finalMapsInMemory.get(word) + counter);
  				}
              } 
              fic.close();

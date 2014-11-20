@@ -103,10 +103,6 @@ public class Master {
 		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Workers core : " + workersCores); 
-    		System.out.println("Data cleaning :");
-    	}
-		
-		if (Constant.MODE_DEBUG) {
 			totalTime = (double) ((System.currentTimeMillis() - st) / 1000.0) % 60;
 			System.out.println();
 			System.out.println(Constant.APP_DEBUG_BLOC + " Initialize and clean in " + totalTime + " secondes " + Constant.APP_DEBUG_BLOC);

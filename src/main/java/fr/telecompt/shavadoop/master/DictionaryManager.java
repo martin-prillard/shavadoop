@@ -3,7 +3,6 @@ package fr.telecompt.shavadoop.master;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

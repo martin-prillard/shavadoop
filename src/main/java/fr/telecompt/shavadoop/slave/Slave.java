@@ -45,7 +45,7 @@ public class Slave {
 	private boolean state = true;
 	private int portMasterDictionary;
 	private int portTaskTracker;
-	ConcurrentMap<String, Integer> finalMapsInMemory = new ConcurrentHashMap<String, Integer>();
+	private volatile ConcurrentHashMap<String, Integer> finalMapsInMemory = new ConcurrentHashMap<String, Integer>();
 	private String idWorker;
 	private int nbWorker;
 	
