@@ -13,8 +13,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
@@ -88,65 +89,47 @@ public class SSHManager {
 		
 		List<String> hostAlive = new ArrayList<String>();
 		
+		ExecutorService es = Executors.newCachedThreadPool();
+		
 		// if need more worker, use the distant computer
-		if (hostAlive.size() < nbWorker) {
-			for (String host : hostsNetwork) {
-				if (hostAlive.size() < nbWorker) {
-					if (isLocal(host)) {
-						// add to our list of cores alive
-						hostAlive.add(host);
-						if (Constant.MODE_SCP_FILES && !initializedHost.contains(host)) {
-							initializeShavadoopWorkspace(host);
-						}
-					} else if (!isLocal(host) && isAlive(host)) {
-						for (int i = 0; i < getCoresNumber(host); i++) {
-							if (hostAlive.size() < nbWorker) {
-								// add to our list of cores alive
-								hostAlive.add(host);
-								if (Constant.MODE_SCP_FILES && !initializedHost.contains(host)) {
-									initializeShavadoopWorkspace(host);
-								}
-							} else {
-								break;
+		for (String host : hostsNetwork) {
+			if (hostAlive.size() < nbWorker) {
+				if (isLocal(host)) {
+					// add to our list of cores alive
+					hostAlive.add(host);
+					if (!initializedHost.contains(host)) {
+						initializedHost.add(host);
+						es.execute(new LaunchInitializeHost(this, es, host));
+					}
+				} else if (!isLocal(host) && isAlive(host)) {
+					for (int i = 0; i < getCoresNumber(host); i++) {
+						if (hostAlive.size() < nbWorker) {
+							// add to our list of cores alive
+							hostAlive.add(host);
+							if (!initializedHost.contains(host)) {
+								initializedHost.add(host);
+								es.execute(new LaunchInitializeHost(this, es, host));
 							}
+						} else {
+							break;
 						}
-					} 
-				} else {
-					break;
-				}
+					}
+				} 
+			} else {
+				break;
 			}
 		}
+		
+		es.shutdown();
+		
+		try {
+			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {e.printStackTrace();}
+		
 		
 		if (Constant.MODE_DEBUG) System.out.println(hostAlive.size() + " worker(s) alive found !");
 		
 		return hostAlive;
-	}
-	
-	
-	/**
-	 * Create the directories and jar on distant computer needed to run shavadoop
-	 */
-	public void initializeShavadoopWorkspace(String host) {
-		
-		Pattern paternRootPath = Pattern.compile(Constant.PATH_ROOT);
-		Matcher matcherRootPath = paternRootPath.matcher(Constant.PATH_REPO);
-		// clean directory
-		if (!matcherRootPath.find()) {
-			try {
-				Shell shell = new SSH(host, shellPort, Constant.USERNAME, dsaKey);
-				new Shell.Plain(shell).exec("rm -rf " + Constant.PATH_REPO);
-				new Shell.Plain(shell).exec("mkdir " + Constant.PATH_REPO);
-				new Shell.Plain(shell).exec("mkdir " + Constant.PATH_REPO_RES);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		
-		// transfert the jar program if needed
-		FileTransfert ft = new FileTransfert(this, host, Constant.PATH_SHAVADOOP_JAR, Constant.PATH_JAR, true);
-		ft.transferFileScp();
-		
-		initializedHost.add(host);
 	}
 	
 	
@@ -327,5 +310,5 @@ public class SSHManager {
 	public String getHost() {
 		return host;
 	}
-	
+		
 }

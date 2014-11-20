@@ -24,7 +24,6 @@ public class Constant {
 	public final static String PATH_DSA_DEFAULT_FILE = "/.ssh/id_dsa";
 	public final static String PATH_ROOT = "^/+$";
 	// path files
-	public final static String PATH_F_INPUT_CLEANED = PATH_REPO_RES + "input_cleaned";
 	public final static String PATH_F_SPLITING = PATH_REPO_RES + "S";
 	public final static String PATH_F_MAPPING = PATH_REPO_RES + "UM";
 	public final static String F_MAPPING_BY_WORKER = "W";
@@ -34,7 +33,6 @@ public class Constant {
 	
 	// mode
 	public final static boolean MODE_DEBUG = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_DEBUG));
-	public final static boolean MODE_SCP_FILES = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.MODE_SCP_FILES));
 	public final static String APP_DEBUG_TITLE = "------------------------";
 	public final static String APP_DEBUG_BLOC = "**************************************************";
 	

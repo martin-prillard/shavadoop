@@ -172,7 +172,7 @@ public class Util {
      * @param line
      * @return line clean
      */
-    private static String cleanLine(String line) {
+    public static String cleanLine(String line) {
     	String clean = line;
     	clean = clean.trim();
     	// clean the non alpha numeric character or space
@@ -182,36 +182,6 @@ public class Util {
     	clean = clean.replaceAll("\\t+", " ");
     	return clean;
     }
-    
-    
-	/**
-	 * Clean a text
-	 * @param fileInput
-	 * @param fileOutput
-	 */
-	public static void cleanText(String fileInput, String fileOutput) {
-		FileReader fr;
-		try {
-			fr = new FileReader(fileInput);
-			BufferedReader br = new BufferedReader(fr); 
-			FileWriter fw = new FileWriter(fileOutput); 
-			BufferedWriter bw = new BufferedWriter (fw);
-			PrintWriter write = new PrintWriter(bw); 
-			String line;
-	
-			while((line = br.readLine()) != null) { 
-			    line = cleanLine(line);
-			    // don't write out blank lines
-			    if (!line.equals("") || !line.isEmpty()) {
-			        write.println(line);
-			    }
-			} 
-			write.close();
-			br.close();
-			fr.close();
-		} catch (Exception e) {e.printStackTrace();} 
-		
-	}
     
 	
     /**

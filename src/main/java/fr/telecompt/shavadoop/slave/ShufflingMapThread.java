@@ -3,6 +3,8 @@ package fr.telecompt.shavadoop.slave;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,6 +15,7 @@ import org.apache.commons.io.FilenameUtils;
 import fr.telecompt.shavadoop.network.FileTransfert;
 import fr.telecompt.shavadoop.network.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
+import fr.telecompt.shavadoop.util.Util;
 
 /**
  * 
@@ -39,27 +42,25 @@ public class ShufflingMapThread extends Thread {
 	public void run() {
 		
 		// SLAVE <- SLAVE/MASTER files
-    	if (Constant.MODE_SCP_FILES) {
-	    	ExecutorService es = Executors.newCachedThreadPool();
+    	ExecutorService es = Executors.newCachedThreadPool();
 
-			String destFile = Constant.PATH_REPO_RES 
-					+ FilenameUtils.getName(fileToShuffling);
+		String destFile = Constant.PATH_REPO_RES 
+				+ FilenameUtils.getName(fileToShuffling);
+		
+		// if the file doesn't exist on this computer
+		File f = new File(fileToShuffling);
+		if (!f.exists()) {
+			es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile, false));
+			fileToShuffling = destFile;
+		}
 			
-			// if the file doesn't exist on this computer
-			File f = new File(fileToShuffling);
-			if (!f.exists()) {
-				es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile, false));
-				fileToShuffling = destFile;
-			}
-				
-	    	es.shutdown();
-			try {
-				es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-				slave.setState(false);
-			}
-    	}
+    	es.shutdown();
+		try {
+			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			slave.setState(false);
+		}
 		
     	//Lanch reduce method
     	reduce(fileToShuffling);
@@ -73,7 +74,6 @@ public class ShufflingMapThread extends Thread {
      * @param file
      */
     public void reduce(String file) {
-    	
     	// concat data of each files in one list pair
     	try {
 				 
@@ -96,8 +96,11 @@ public class ShufflingMapThread extends Thread {
              read.close();   
 	             
          } catch (Exception e) {
+    	 List<String> r = new ArrayList<String>();
              e.printStackTrace();
              slave.setState(false);
+             r.add(e.getMessage());
+             Util.writeFile("/cal/homes/prillard/err.log", r);
          }
     }
 	

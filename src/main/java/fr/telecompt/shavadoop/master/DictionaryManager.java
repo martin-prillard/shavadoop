@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +21,10 @@ public class DictionaryManager extends Thread {
 
 	private int portMaster;
 	private int nbWorkerMappers;
-	private Map<String, HashSet<Pair>> dictionary;
+	private ConcurrentHashMap<String, HashSet<Pair>> dictionary;
 	
 	
-	public DictionaryManager(int _portMaster, int _nbWorkerMappers, Map<String, HashSet<Pair>> _dictionary) {
+	public DictionaryManager(int _portMaster, int _nbWorkerMappers, ConcurrentHashMap<String, HashSet<Pair>> _dictionary) {
 		portMaster = _portMaster;
 		nbWorkerMappers = _nbWorkerMappers;
 		dictionary = _dictionary;

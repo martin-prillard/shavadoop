@@ -57,13 +57,11 @@ public class LaunchShufflingMap extends ShellThread {
 				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
 				// MASTER DSM file -> SLAVE
-				if (Constant.MODE_SCP_FILES) {
-					String destFile = Constant.PATH_REPO_RES 
-							+ FilenameUtils.getBaseName(fileToTreat);
-					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
-					ft.transferFileScp();
-					fileToTreat = destFile;
-				}
+				String destFile = Constant.PATH_REPO_RES 
+						+ FilenameUtils.getBaseName(fileToTreat);
+				FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
+				ft.start();
+				fileToTreat = destFile;
 				
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				

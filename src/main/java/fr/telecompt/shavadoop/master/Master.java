@@ -1,21 +1,19 @@
 package fr.telecompt.shavadoop.master;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +33,6 @@ import fr.telecompt.shavadoop.util.Util;
  */
 public class Master {
 	
-	private String fileInputCleaned = null;
 	private int portMasterDictionary;
 	private int portTaskTracker;
 	private int nbWorkerMax;
@@ -88,11 +85,10 @@ public class Master {
     	}
     	
 		// get values from properties file
-		fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
+    	fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
 		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
     	portMasterDictionary = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER_DICTIONARY));
     	portTaskTracker = Integer.parseInt(prop.getPropValues(PropReader.PORT_TASK_TRACKER));
-		fileInputCleaned = Constant.PATH_F_INPUT_CLEANED;
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Variables initialized");
 			System.out.println("Get workers core alive : ");
@@ -103,19 +99,12 @@ public class Master {
     	} catch (UnsupportedEncodingException e) {e.printStackTrace();}
     	// get workers
 		workersCores = sm.getHostAliveCores(nbWorkerMax, false);
-		if (Constant.MODE_SCP_FILES) {
-			Constant.PATH_SHAVADOOP_JAR = Constant.PATH_JAR;
-		}
+		Constant.PATH_SHAVADOOP_JAR = Constant.PATH_JAR;
 		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Workers core : " + workersCores); 
     		System.out.println("Data cleaning :");
     	}
-    	// clean the input text
-		Util.cleanText(fileToTreat, fileInputCleaned);
-		if (Constant.MODE_DEBUG) {
-			System.out.println("File " + fileToTreat + " cleaned in  " + fileInputCleaned);
-		}
 		
 		if (Constant.MODE_DEBUG) {
 			totalTime = (double) ((System.currentTimeMillis() - st) / 1000.0) % 60;
@@ -144,7 +133,7 @@ public class Master {
 			System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting");
 			st = System.currentTimeMillis();
 		}
-		List<String> filesToMap = inputSplitting(workersCores, fileInputCleaned);
+		List<String> filesToMap = inputSplitting(workersCores, fileToTreat);
 		if (Constant.MODE_DEBUG) {
 			totalTime = (double) ((System.currentTimeMillis() - st) / 1000.0) % 60;
 			System.out.println(Constant.APP_DEBUG_TITLE + " done in " + totalTime + " secondes");
@@ -267,7 +256,7 @@ public class Master {
 		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
 		
 		// dictionary
-    	Map<String, HashSet<Pair>> dicoMapping = new HashMap<String, HashSet<Pair>>();
+		ConcurrentHashMap<String, HashSet<Pair>> dicoMapping = new ConcurrentHashMap<String, HashSet<Pair>>();
     	// listener to get part dictionary from the worker mappers
     	es.execute(new DictionaryManager(portMasterDictionary, nbWorkerMappers, dicoMapping));
     	
@@ -310,7 +299,7 @@ public class Master {
      */
     private Map<String, String> launchShufflingMapThreads(List<String> workersCores) throws IOException {
 		// host who have a reduce file to assemble
-    	Map<String, String> dicoReducing = new HashMap<String, String>();
+    	ConcurrentHashMap<String, String> dicoReducing = new ConcurrentHashMap<String, String>();
 		
 		// object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
@@ -391,39 +380,25 @@ public class Master {
     	if (Constant.MODE_DEBUG) System.out.println("Nb files to merge : " + listFiles.size());
     	
     	// concat data of each files in one
-		try {
-             Map<String, Integer> finalResult = new HashMap<String, Integer>();
-             
-             // for each files
-             for (Iterator<String> it = listFiles.iterator(); it.hasNext(); ) {
-            	 String file = it.next();
-				 File f = new File(file);
-	             FileReader fic = new FileReader(f);
-	             BufferedReader read = new BufferedReader(fic);
-	             String line = null;
-	
-	             // for each lines of the file
-	             while ((line = read.readLine()) != null) {
-		            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
-		            // add each line to our hashmap
-		            String word = words[0];
-		            int counter = Integer.parseInt(words[1]);
-	 				if (finalResult.keySet().contains(word)) {
-	 					finalResult.put(word, finalResult.get(word) + counter);
-	 				} else {
-	 					finalResult.put(word, counter);
-	 				}
-	             } 
-	        	 
-	             fic.close();
-	             read.close();   
-			 }
-			 
-        	 Util.writeFile(fileFinalResult, finalResult);
-        	 
-         } catch (IOException e) {	
-             e.printStackTrace();
-         }
+		ConcurrentHashMap<String, Integer> finalResult = new ConcurrentHashMap<String, Integer>();
+         
+		ExecutorService es = Executors.newCachedThreadPool();
+		
+        // for each files
+        for (Iterator<String> it = listFiles.iterator(); it.hasNext(); ) {
+	        final String file = it.next();
+	        // merge file into the final hashmap
+	        es.execute(new LaunchMergeFile(file, finalResult));
+		}
+		 
+        es.shutdown();
+        
+ 		try {
+ 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {e.printStackTrace();}
+ 		
+ 		// write the final result
+    	Util.writeFile(fileFinalResult, finalResult);
     }
 
 }

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import fr.telecompt.shavadoop.util.Constant;
 import fr.telecompt.shavadoop.util.Pair;
@@ -20,11 +21,11 @@ import fr.telecompt.shavadoop.util.Pair;
 public class ListenerDictionary extends Thread {
 
 	private ServerSocket ss;
-	private Map<String, HashSet<Pair>> dictionary;
+	private ConcurrentHashMap<String, HashSet<Pair>> dictionary;
 	private Map<String, HashSet<Pair>> partDictionary = new HashMap<String, HashSet<Pair>>();
 	
 	
-	public ListenerDictionary(ServerSocket _ss, Map<String, HashSet<Pair>> _dictionary){
+	public ListenerDictionary(ServerSocket _ss, ConcurrentHashMap<String, HashSet<Pair>> _dictionary){
 		 ss = _ss;
 		 dictionary = _dictionary;
 	}

@@ -100,17 +100,14 @@ public class Slave {
     			Util.writeFile(fileToAssemble, finalMapsInMemory);
 	    		
 	    		// SLAVE file -> MASTER
-        		if (Constant.MODE_SCP_FILES) { 
-        			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
-
-        			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true));
-					esScpFile.shutdown();
-		    		try {
-		    			esScpFile.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
-		    		} catch (InterruptedException e) {
-		    			e.printStackTrace();
-		    			state = false;
-		    		}
+    			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
+    			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true));
+				esScpFile.shutdown();
+	    		try {
+	    			esScpFile.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
+	    		} catch (InterruptedException e) {
+	    			e.printStackTrace();
+	    			state = false;
 	    		}
 	    		break;
     	}
@@ -142,7 +139,12 @@ public class Slave {
              }
              
              while ((line = read.readLine()) != null) {
-            	 unsortedMaps = wordCount(nbWorker, unsortedMaps, line);
+            	// clean the line
+ 			    line = Util.cleanLine(line);
+ 			    // don't write out blank lines
+ 			    if (!line.equals("") || !line.isEmpty()) {
+ 	            	 unsortedMaps = wordCount(nbWorker, unsortedMaps, line);
+ 			    }
              }
              
              fic.close();

@@ -25,7 +25,6 @@ public class PropReader {
 	public static final String PATH_REPO = "path_repo";
 	public static final String NETWORK_IP_REGEX = "network_ip_regex";
 	public static final String MODE_DEBUG = "mode_debug";
-	public static final String MODE_SCP_FILES = "mode_scp_files";
 	public static final String BLOC_SIZE_MIN = "bloc_size_min";
 	public static final String TASK_TRACKER_FREQ = "task_tracker_freq";
 	public static final String TASK_TRACKER_ANSWER_TIMEOUT = "task_tracker_answer_timeout";

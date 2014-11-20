@@ -52,14 +52,12 @@ public class LaunchSplitMapping extends ShellThread {
 				// connect to the distant computer
 				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
-				// MASTER files -> SLAVE
-				if (Constant.MODE_SCP_FILES) {
-					String destFile = Constant.PATH_REPO_RES 
-							+ FilenameUtils.getBaseName(fileToTreat);
-					FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
-					ft.transferFileScp();
-					fileToTreat = destFile;
-				}
+				// MASTER file DSM -> SLAVE
+				String destFile = Constant.PATH_REPO_RES 
+						+ FilenameUtils.getBaseName(fileToTreat);
+				FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
+				ft.start();
+				fileToTreat = destFile;
 				
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				
