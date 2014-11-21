@@ -59,7 +59,7 @@ public class LaunchShufflingMap extends ShellThread {
 				// MASTER DSM file -> SLAVE
 				String destFile = Constant.PATH_REPO_RES 
 						+ FilenameUtils.getBaseName(fileToTreat);
-				FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true);
+				FileTransfert ft = new FileTransfert(sm, distantHost, fileToTreat, destFile, true, false);
 				ft.start();
 				fileToTreat = destFile;
 				

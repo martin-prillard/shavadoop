@@ -165,23 +165,6 @@ public class Util {
 			if (Constant.MODE_DEBUG) System.out.println(pathRepoRes + " is the root path ! ");
 		}
 	}
-
-	
-    /**
-     * Clean the line
-     * @param line
-     * @return line clean
-     */
-    public static String cleanLine(String line) {
-    	String clean = line;
-    	clean = clean.trim();
-    	// clean the non alpha numeric character or space
-    	clean = clean.replaceAll("[^a-zA-Z0-9\\s]", "");
-    	// just one space beetween each words
-    	clean = clean.replaceAll("\\s+", " ");
-    	clean = clean.replaceAll("\\t+", " ");
-    	return clean;
-    }
     
 	
     /**

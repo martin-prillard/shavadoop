@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -48,7 +48,6 @@ public class Slave {
 	private volatile ConcurrentHashMap<String, Integer> finalMapsInMemory = new ConcurrentHashMap<String, Integer>();
 	private String idWorker;
 	private int nbWorker;
-	
 	
     public Slave(String _nbWorker, String _idWorker, String _hostMaster, String _functionName, String _fileToTreat) {
     	nbWorker = Integer.parseInt(_nbWorker);
@@ -89,8 +88,11 @@ public class Slave {
 	    		int threadQueueMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_QUEUE_MAX_BY_WORKER));
 	    		
 	    		// launch shuffling map thread
-	    		launchShufflingMapThread(threadMaxByWorker, threadQueueMaxByWorker);
-	    		
+	    		ConcurrentHashMap<String, List<Integer>> sortedMaps = launchShufflingMapThread(threadMaxByWorker, threadQueueMaxByWorker);
+    			 
+				// sum sorted maps into the final maps
+	    		mappingSortedMapsInMemory(sortedMaps);
+				
     			// write the RM file
     			String fileToAssemble = Constant.PATH_F_REDUCING 
            			 + Constant.SEP_NAME_FILE
@@ -101,7 +103,7 @@ public class Slave {
 	    		
 	    		// SLAVE file -> MASTER
     			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
-    			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true));
+    			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true, false));
 				esScpFile.shutdown();
 	    		try {
 	    			esScpFile.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
@@ -140,7 +142,7 @@ public class Slave {
              
              while ((line = read.readLine()) != null) {
             	// clean the line
- 			    line = Util.cleanLine(line);
+ 			    line = cleanLine(line);
  			    // don't write out blank lines
  			    if (!line.equals("") || !line.isEmpty()) {
  	            	 unsortedMaps = wordCount(nbWorker, unsortedMaps, line);
@@ -178,6 +180,23 @@ public class Slave {
          }
     }
 
+    
+    /**
+     * Clean the line
+     * @param line
+     * @return line clean
+     */
+    public String cleanLine(String line) {
+    	String clean = line;
+    	clean = clean.trim();
+    	// clean the non alpha numeric character or space
+    	clean = clean.replaceAll("[^a-zA-Z0-9\\s]", "");
+    	// just one space beetween each words
+    	clean = clean.replaceAll("\\s+", " ");
+    	clean = clean.replaceAll("\\t+", " ");
+    	return clean;
+    }
+    
     
     /**
      * Count the occurence of each word in the sentence
@@ -238,8 +257,10 @@ public class Slave {
     /**
      * Launch shuffling map process for each UM files in the DSM file
      */
-    private void launchShufflingMapThread(int threadMaxByWorker, int threadQueueMaxByWorker) {
+    private ConcurrentHashMap<String, List<Integer>> launchShufflingMapThread(int threadMaxByWorker, int threadQueueMaxByWorker) {
 		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
+		
+		ConcurrentHashMap<String, List<Integer>> sortedMaps = new ConcurrentHashMap<String, List<Integer>>();
 		
 		try{
 		    InputStream ips = new FileInputStream(fileToTreat); 
@@ -252,8 +273,9 @@ public class Slave {
 				String[] elements = shufflingDictionaryLine.split(Constant.SEP_CONTAINS_FILE);
 				String host = elements[0];
 				String fileToShuffling = elements[1];
+				
 				// excute the shuffling map on it
-				es.execute(new ShufflingMapThread(sm, this, finalMapsInMemory, host, fileToShuffling));
+				es.execute(new ShufflingMapThread(sm, this, sortedMaps, host, fileToShuffling));
 			}
 			
 			br.close();
@@ -267,12 +289,95 @@ public class Slave {
 				e.printStackTrace();
 				state = false;
 			}
+			
 		} catch (IOException e) {
 			System.out.println("No shuffling dictionary file : " + fileToTreat);
-			state = false;
+			state = false; //TODO
 		}
+		
+		return sortedMaps;
     }
     
+    /**
+     * Reduce method in-memory
+     * @param sortedMaps
+     */
+    public void mappingSortedMapsInMemory(ConcurrentHashMap<String, List<Integer>> sortedMaps) {
+        
+		 try {
+
+ 			// concat the localFinalMaps with the finalMapsInMemory
+ 			for (Entry<String, List<Integer>> e : sortedMaps.entrySet()) {
+ 				String word = e.getKey();
+ 				List<Integer> listCounter = e.getValue();
+ 				int counterTotal = 0;
+ 				for (int i = 0; i < listCounter.size(); i++) {
+ 					if (listCounter.get(i) != null) { //TODO see
+ 						counterTotal += listCounter.get(i);
+ 					}
+ 				}
+				finalMapsInMemory.put(word, counterTotal);
+ 			}
+             
+         } catch (Exception e) {
+             e.printStackTrace();
+             state = false;
+         }
+    }
+    
+//    /**
+//     * Group and sort maps results by key
+//     * @param file
+//     * @return sorted maps
+//     */
+//    public void shufflingMaps(String file) {
+//    	// concat data of each files in one list
+//    	try {
+//             FileReader fic = new FileReader(file);
+//             BufferedReader read = new BufferedReader(fic);
+//             String line = null;
+//
+//             // For each lines of the file
+//             while ((line = read.readLine()) != null) {
+//	            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
+//	            String word = words[0];
+//	            int counter = Integer.parseInt(words[1]);
+//	            sortedMaps.putIfAbsent(word, new ArrayList<Integer>());
+// 				sortedMaps.get(word).add(counter);
+//             } 
+//             fic.close();
+//             read.close();   
+//	             
+//         } catch (Exception e) {
+//             e.printStackTrace();
+//             state = false;
+//         }
+//    }
+   
+    
+//    /**
+//     * Reduce method in-memory
+//     * @param sortedMaps
+//     */
+//    public void mappingSortedMapsInMemory(ConcurrentHashMap<String, List<Integer>> sortedMaps) {
+//		 try {
+//
+// 			// concat the localFinalMaps with the finalMapsInMemory
+// 			for (Entry<String, List<Integer>> e : sortedMaps.entrySet()) {
+// 				String word = e.getKey();
+// 				List<Integer> listCounter = e.getValue();
+// 				int counterTotal = 0;
+// 				for(int i : listCounter) {
+// 					counterTotal += i;
+// 				}
+//				finalMapsInMemory.put(word, counterTotal);
+// 			}
+//             
+//         } catch (Exception e) {
+//             e.printStackTrace();
+//             state = false;
+//         }
+//    }
     
 	public boolean isState() {
 		return state;

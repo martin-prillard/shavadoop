@@ -28,13 +28,13 @@ public class ShufflingMapThread extends Thread {
 	private String fileToShuffling;
 	private Slave slave;
 	private SSHManager sm;
-	private volatile ConcurrentHashMap<String, Integer> finalMapsInMemory;
+	private volatile ConcurrentHashMap<String, List<Integer>> sortedMaps;
 	
-	public ShufflingMapThread(SSHManager _sm, Slave _slave, ConcurrentHashMap<String, Integer> _finalMapsInMemory, String _hostOwner, String _fileToShuffling) {
+	public ShufflingMapThread(SSHManager _sm, Slave _slave, ConcurrentHashMap<String, List<Integer>> _sortedMaps, String _hostOwner, String _fileToShuffling) {
 		hostOwner = _hostOwner;
 		fileToShuffling = _fileToShuffling;
 		slave = _slave;
-		finalMapsInMemory = _finalMapsInMemory;
+		sortedMaps = _sortedMaps;
 		sm = _sm;
 	}
 	
@@ -50,7 +50,7 @@ public class ShufflingMapThread extends Thread {
 		// if the file doesn't exist on this computer
 		File f = new File(fileToShuffling);
 		if (!f.exists()) {
-			es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile, false));
+			es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile, false, false));
 			fileToShuffling = destFile;
 		}
 			
@@ -63,20 +63,17 @@ public class ShufflingMapThread extends Thread {
 		}
 		
     	//Lanch reduce method
-    	reduce(fileToShuffling);
-		
+		shufflingMaps(fileToShuffling);
 	}
 	
-	
     /**
-     * Combine group and sort maps results by key
-     * and reduce method in-memory
+     * Group and sort maps results by key
      * @param file
+     * @return sorted maps
      */
-    public void reduce(String file) {
-    	// concat data of each files in one list pair
+    public void shufflingMaps(String file) {
+    	// concat data of each files in one list
     	try {
-				 
              FileReader fic = new FileReader(file);
              BufferedReader read = new BufferedReader(fic);
              String line = null;
@@ -86,22 +83,21 @@ public class ShufflingMapThread extends Thread {
 	            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
 	            String word = words[0];
 	            int counter = Integer.parseInt(words[1]);
- 				if (!finalMapsInMemory.keySet().contains(word)) {
- 					 finalMapsInMemory.putIfAbsent(word, counter);
- 				} else {
- 					finalMapsInMemory.replace(word, finalMapsInMemory.get(word), finalMapsInMemory.get(word) + counter);
- 				}
+	            sortedMaps.putIfAbsent(word, new ArrayList<Integer>()); //TODO see
+ 				sortedMaps.get(word).add(counter);
              } 
              fic.close();
              read.close();   
-	             
+             
          } catch (Exception e) {
-    	 List<String> r = new ArrayList<String>();
+        	 List<String> r = new ArrayList<String>(); //TODO
              e.printStackTrace();
-             slave.setState(false);
-             r.add(e.getMessage());
-             Util.writeFile("/cal/homes/prillard/err.log", r);
+             r.add("erreur : " + e + " on " + sm.getHostFull()); //TODO
+             Util.writeFile("/cal/homes/prillard/err.log", r); //TODO
+           slave.setState(false);
          }
     }
 	
 }
+
+
