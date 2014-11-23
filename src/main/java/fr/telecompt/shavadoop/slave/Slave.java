@@ -18,6 +18,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.jcabi.ssh.SSH;
+import com.jcabi.ssh.Shell;
+
 import fr.telecompt.shavadoop.network.FileTransfert;
 import fr.telecompt.shavadoop.network.SSHManager;
 import fr.telecompt.shavadoop.slave.tasktracker.StateSlave;
@@ -101,9 +104,9 @@ public class Slave {
            			 + sm.getHostFull();
     			Util.writeFile(fileToAssemble, finalMapsInMemory);
 	    		
-	    		// SLAVE file -> MASTER
+	    		// slav file -> master
     			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
-    			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true, false));
+    			esScpFile.execute(new FileTransfert(sm, null, hostMaster, fileToAssemble, fileToAssemble, false));
 				esScpFile.shutdown();
 	    		try {
 	    			esScpFile.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
@@ -262,6 +265,8 @@ public class Slave {
 		
 		ConcurrentHashMap<String, List<Integer>> sortedMaps = new ConcurrentHashMap<String, List<Integer>>();
 		
+		Map<String, Shell> shellsMap = new HashMap<String, Shell>();
+		
 		try{
 		    InputStream ips = new FileInputStream(fileToTreat); 
 			InputStreamReader ipsr = new InputStreamReader(ips);
@@ -274,8 +279,12 @@ public class Slave {
 				String host = elements[0];
 				String fileToShuffling = elements[1];
 				
+				if (!sm.isLocal(host) && !shellsMap.containsKey(host)) {
+					shellsMap.put(host, new SSH(host, sm.getShellPort(), Constant.USERNAME, sm.getDsaKey()));
+				} 
+				
 				// excute the shuffling map on it
-				es.execute(new ShufflingMapThread(sm, this, sortedMaps, host, fileToShuffling));
+				es.execute(new ShufflingMapThread(sm, shellsMap.get(host), this, sortedMaps, host, fileToShuffling));
 			}
 			
 			br.close();
@@ -292,7 +301,7 @@ public class Slave {
 			
 		} catch (IOException e) {
 			System.out.println("No shuffling dictionary file : " + fileToTreat);
-			state = false; //TODO
+			state = false;
 		}
 		
 		return sortedMaps;

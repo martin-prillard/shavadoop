@@ -1,7 +1,6 @@
 package fr.telecompt.shavadoop.network;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import com.jcabi.ssh.Shell;
 
 import fr.telecompt.shavadoop.util.Constant;
 
@@ -13,15 +12,15 @@ import fr.telecompt.shavadoop.util.Constant;
 public class FileTransfert extends ShellThread {
 	
 	private String destFile;
-	private boolean fromLocal;
 	private boolean jar;
+	private Shell shell;
 	
 	
-	public FileTransfert(SSHManager _sm, String _HostOwner, String _fileToTreat, String _destFile, boolean _fromLocal, boolean _jar) {
+	public FileTransfert(SSHManager _sm, Shell _shell, String _HostOwner, String _fileToTreat, String _destFile, boolean _jar) {
 		super(_sm, _HostOwner, _fileToTreat);
 		destFile = _destFile;
-		fromLocal = _fromLocal;
 		jar = _jar;
+		shell = _shell;
 	}
 	
 	
@@ -34,42 +33,35 @@ public class FileTransfert extends ShellThread {
 	 * Transfer a file with scp
 	 */
 	public void transferFileScp() {
-//		cat file | ssh ajw@dogmatix "cat > remote"
-//		Or:
-//
-//		ssh ajw@dogmatix "cat > remote" < file
-//		To receive a file:
-//
-//		ssh ajw@dogmatix "cat remote" > copy
-		String cmd = "cat "; //TODO don't work
+		
+		String cmd = "cat "; //TODO work, but it's not a good solution
 		String esp = " > ";
 		if (jar) {
-			cmd = "scp ";
+			cmd = "scp "; //TODO work, but sometimes not (when a lot scp launched simultaneous)
 			esp = " ";
 		}
-		//if to local
+		//if from local to local
 		if (sm.isLocal(distantHost)) {
 			cmd = cmd + fileToTreat + " " + destFile;
+		//if from local to distant
 		} else {
-			if (fromLocal) {
-				// local to distant
-				cmd = cmd + fileToTreat + esp + username + "@" + distantHost + ":" + destFile;
-			} else {
-				// distant to local
-				cmd = cmd + username + "@" + distantHost + ":" + fileToTreat + esp + destFile;
-			}
+			cmd = cmd + fileToTreat + esp + username + "@" + distantHost + ":" + destFile;
 		}
 		try {
-			// Run a java app in a separate system process
-			Process p = Runtime.getRuntime().exec(cmd);
-	        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
-	        String s;
-	        while((s=stdOut.readLine())!=null){
-	            //nothing
-	        }
-            p.waitFor();
+			if (shell == null) {
+				Process p = Runtime.getRuntime().exec(cmd);
+//		        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
+//		        String s;
+//		        while((s=stdOut.readLine())!=null){ //TODO needed ?
+//		            //nothing
+//		        }
+	            p.waitFor();
+	            p.destroy();
+			} else {
+				new Shell.Plain(shell).exec(cmd); //TODO works, but not a good solution
+			}
 			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
-            p.destroy();
+
 		} catch (Exception e) {
 			System.out.println("Error on local : " + cmd);
 			e.printStackTrace();

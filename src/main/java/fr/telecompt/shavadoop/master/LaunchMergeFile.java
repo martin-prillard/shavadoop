@@ -38,11 +38,8 @@ public class LaunchMergeFile extends Thread {
 	            // add each line to our hashmap
 	            String word = words[0];
 	            int counter = Integer.parseInt(words[1]);
-//	            finalResult.put(word, counter);
-	            
- 				if (finalResult.keySet().contains(word)) { //TODO 
+ 				if (finalResult.keySet().contains(word)) {
  					finalResult.put(word, finalResult.get(word) + counter);
- 					System.out.println("fsdfsdf"); //TODO
  				} else {
  					finalResult.put(word, counter);
  				}

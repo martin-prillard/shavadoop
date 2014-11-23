@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.jcabi.ssh.Shell;
+
 import fr.telecompt.shavadoop.network.FileTransfert;
 import fr.telecompt.shavadoop.network.SSHManager;
 import fr.telecompt.shavadoop.util.Constant;
@@ -26,31 +28,32 @@ public class ShufflingMapThread extends Thread {
 
 	private String hostOwner;
 	private String fileToShuffling;
+	private Shell shell;
 	private Slave slave;
 	private SSHManager sm;
 	private volatile ConcurrentHashMap<String, List<Integer>> sortedMaps;
 	
-	public ShufflingMapThread(SSHManager _sm, Slave _slave, ConcurrentHashMap<String, List<Integer>> _sortedMaps, String _hostOwner, String _fileToShuffling) {
+	public ShufflingMapThread(SSHManager _sm, Shell _shell, Slave _slave, ConcurrentHashMap<String, List<Integer>> _sortedMaps, String _hostOwner, String _fileToShuffling) {
 		hostOwner = _hostOwner;
 		fileToShuffling = _fileToShuffling;
 		slave = _slave;
 		sortedMaps = _sortedMaps;
 		sm = _sm;
+		shell = _shell;
 	}
 	
 	
 	public void run() {
 		
-		// SLAVE <- SLAVE/MASTER files
     	ExecutorService es = Executors.newCachedThreadPool();
 
 		String destFile = Constant.PATH_REPO_RES 
 				+ FilenameUtils.getName(fileToShuffling);
 		
-		// if the file doesn't exist on this computer
 		File f = new File(fileToShuffling);
 		if (!f.exists()) {
-			es.execute(new FileTransfert(sm, hostOwner, fileToShuffling, destFile, false, false));
+			// ssh slave / master files -> slave
+			es.execute(new FileTransfert(sm, shell, hostOwner, fileToShuffling, destFile, false));
 			fileToShuffling = destFile;
 		}
 			
@@ -69,7 +72,6 @@ public class ShufflingMapThread extends Thread {
     /**
      * Group and sort maps results by key
      * @param file
-     * @return sorted maps
      */
     public void shufflingMaps(String file) {
     	// concat data of each files in one list
