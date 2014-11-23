@@ -1,6 +1,7 @@
 package fr.telecompt.shavadoop.network;
 
-import com.jcabi.ssh.Shell;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 import fr.telecompt.shavadoop.util.Constant;
 
@@ -12,15 +13,14 @@ import fr.telecompt.shavadoop.util.Constant;
 public class FileTransfert extends ShellThread {
 	
 	private String destFile;
-	private boolean jar;
-	private Shell shell;
+	private boolean fromLocalToDistant;
+	private boolean bulk;
 	
-	
-	public FileTransfert(SSHManager _sm, Shell _shell, String _HostOwner, String _fileToTreat, String _destFile, boolean _jar) {
-		super(_sm, _HostOwner, _fileToTreat);
+	public FileTransfert(SSHManager _sm, String _hostOwner, String _fileToTreat, String _destFile, boolean _fromLocalToDistant, boolean _bulk) {
+		super(_sm, _hostOwner, _fileToTreat);
 		destFile = _destFile;
-		jar = _jar;
-		shell = _shell;
+		fromLocalToDistant = _fromLocalToDistant;
+		bulk = _bulk;
 	}
 	
 	
@@ -34,37 +34,31 @@ public class FileTransfert extends ShellThread {
 	 */
 	public void transferFileScp() {
 		
-		String cmd = "cat "; //TODO work, but it's not a good solution
-		String esp = " > ";
-		if (jar) {
-			cmd = "scp "; //TODO work, but sometimes not (when a lot scp launched simultaneous)
-			esp = " ";
-		}
-		//if from local to local
-		if (sm.isLocal(distantHost)) {
-			cmd = cmd + fileToTreat + " " + destFile;
-		//if from local to distant
-		} else {
-			cmd = cmd + fileToTreat + esp + username + "@" + distantHost + ":" + destFile;
-		}
-		try {
-			if (shell == null) {
-				Process p = Runtime.getRuntime().exec(cmd);
-//		        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
-//		        String s;
-//		        while((s=stdOut.readLine())!=null){ //TODO needed ?
-//		            //nothing
-//		        }
+		if (!sm.isLocal(distantHost)) {
+			String cmdLine = null;
+			if (fromLocalToDistant) {
+				cmdLine = "scp " + fileToTreat + " " + username + "@" + distantHost + ":" + destFile;
+			} else {
+				if (bulk) {
+					cmdLine = "scp " + username + "@" + distantHost + ":{" + fileToTreat + "} " + destFile;
+				} else {
+					cmdLine = "scp " + username + "@" + distantHost + ":" + fileToTreat + " " + destFile;
+				}
+			}
+			
+			try {
+				Process p = Runtime.getRuntime().exec(cmdLine);
+		        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
+		        while((stdOut.readLine())!=null){
+		            // do nothing, wait needed for scp
+		        }
 	            p.waitFor();
 	            p.destroy();
-			} else {
-				new Shell.Plain(shell).exec(cmd); //TODO works, but not a good solution
+				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmdLine);
+			} catch (Exception e) {
+				System.out.println("Error on local : " + cmdLine);
+				e.printStackTrace();
 			}
-			if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
-
-		} catch (Exception e) {
-			System.out.println("Error on local : " + cmd);
-			e.printStackTrace();
 		}
 	}
 	

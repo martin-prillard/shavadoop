@@ -14,8 +14,8 @@ public class Constant {
 	public final static String USERNAME = System.getProperty("user.name");
 	
 	// path directory
-	public static String PATH_SHAVADOOP_JAR_TODECODE = Constant.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-	public static String PATH_SHAVADOOP_JAR;
+	public static String PATH_JAR_MASTER_TODECODE = Constant.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+	public static String PATH_JAR_MASTER;
 	public static String PATH_REPO = new PropReader().getPropValues(PropReader.PATH_REPO);
 	public final static String PATH_REPO_RES = PATH_REPO + "/temp/";
 	public final static String PATH_JAR = PATH_REPO + "/" + APP_JAR;
@@ -45,7 +45,6 @@ public class Constant {
 	public final static String SEP_SOCKET_MESSAGE = ";";
 	public final static String MESSAGE_TASKTRACKER_REQUEST = "ARE_YOU_ALIVE";
 	public final static String ANSWER_TASKTRACKER_REQUEST_OK = "OK";
-	public final static String ANSWER_TASKTRACKER_REQUEST_KO = "KO";
 	public final static String ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED = "TASK_FINISHED";
 	// job
 	public final static boolean TASK_TRACKER = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.TASK_TRACKER));

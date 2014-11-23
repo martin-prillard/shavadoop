@@ -1,6 +1,11 @@
 package fr.telecompt.shavadoop.master;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -41,7 +46,7 @@ public class LaunchShufflingMap extends ShellThread {
     
 	public void run() {
         try {
-			String pathJar = Constant.PATH_SHAVADOOP_JAR;
+			String pathJar = Constant.PATH_JAR_MASTER;
 			String method = Slave.SHUFFLING_MAP_FUNCTION;
 			
 			// execute on the master's computer
@@ -50,20 +55,34 @@ public class LaunchShufflingMap extends ShellThread {
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
-				p.waitFor();
+		        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
+		        while((stdOut.readLine())!=null){
+		            // do nothing, wait needed for scp
+		        }
+	            p.waitFor();
+	            p.destroy();
 			// execute on a distant computer
 			} else {
+				ExecutorService es = Executors.newCachedThreadPool();
+				
 				// connect to the distant computer
 				shell = new SSH(distantHost, shellPort, Constant.USERNAME, dsaKey);
 				
-				// master DSM file -> slave
+				// master file DSM -> slave
 				String destFile = Constant.PATH_REPO_RES 
 						+ FilenameUtils.getBaseName(fileToTreat);
-				FileTransfert ft = new FileTransfert(sm, null, distantHost, fileToTreat, destFile, false);
-				ft.start();
+				es.execute(new FileTransfert(sm, distantHost, fileToTreat, destFile, true, false));
+				
 				fileToTreat = destFile;
 				
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
+				
+		    	es.shutdown();
+				try {
+					es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 				
 				// launch map process
 				new Shell.Plain(shell).exec(cmd);

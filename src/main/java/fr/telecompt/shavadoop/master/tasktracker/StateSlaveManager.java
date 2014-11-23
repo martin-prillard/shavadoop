@@ -107,7 +107,7 @@ public class StateSlaveManager extends Thread {
 			host = hostWorker.get(0);
 		} else {
 			// it's the master
-			host = sm.getHostFull();
+			host = sm.getHostFullMaster();
 		}
 		// we relaunch the task on an other worker
 		if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : redirect " + taskName + " from worker " + idWorker + " (" + hostFail + ") task on " + host); 

@@ -6,7 +6,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
 import java.net.URLDecoder;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -66,7 +68,11 @@ public class Master {
 		}
 		
 		// initialize the SSH manager
-    	sm = new SSHManager();
+		String hostFullMaster = null;
+		try {
+			hostFullMaster = InetAddress.getLocalHost().getCanonicalHostName();
+		} catch (UnknownHostException e1) {e1.printStackTrace();}
+    	sm = new SSHManager(hostFullMaster);
     	sm.initialize();
     	
 		// create / clean res directory
@@ -95,11 +101,10 @@ public class Master {
 		}
 
     	try {
-			Constant.PATH_SHAVADOOP_JAR = URLDecoder.decode(Constant.PATH_SHAVADOOP_JAR_TODECODE, "UTF-8");
+			Constant.PATH_JAR_MASTER = URLDecoder.decode(Constant.PATH_JAR_MASTER_TODECODE, "UTF-8");
     	} catch (UnsupportedEncodingException e) {e.printStackTrace();}
     	// get workers
 		workersCores = sm.getHostAliveCores(nbWorkerMax, false);
-		Constant.PATH_SHAVADOOP_JAR = Constant.PATH_JAR;
 		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Workers core : " + workersCores); 
@@ -148,7 +153,7 @@ public class Master {
 			System.out.println(Constant.APP_DEBUG_TITLE + " done in " + totalTime + " secondes");
 	        System.out.println();
         }
-  
+        
         // launch shuffling maps process : master & slave
         if (Constant.MODE_DEBUG) {
         	System.out.println(Constant.APP_DEBUG_TITLE + " Shuffling map");

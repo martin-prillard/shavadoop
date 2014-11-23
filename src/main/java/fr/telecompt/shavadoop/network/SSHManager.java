@@ -39,10 +39,16 @@ public class SSHManager {
 	private PropReader prop = new PropReader();
 	private String host;
 	private String hostFull;
+	private String hostFullMaster;
 	private String username = System.getProperty("user.name");
 	private String homeDirectory = System.getProperty("user.home");
 	private String ipAdress;
 	private Set<String> initializedHost = new HashSet<String>();
+	
+	
+	public SSHManager(String _hostFullMaster) {
+		hostFullMaster = _hostFullMaster;
+	}
 	
 	
 	/**
@@ -94,14 +100,14 @@ public class SSHManager {
 		// if need more worker, use the distant computer
 		for (String host : hostsNetwork) {
 			if (hostAlive.size() < nbWorker) {
-				if (isLocal(host)) {
+				if (isMaster(host)) {
 					// add to our list of cores alive
 					hostAlive.add(host);
 					if (!initializedHost.contains(host)) {
 						initializedHost.add(host);
 						es.execute(new LaunchInitializeHost(this, es, host, true));
 					}
-				} else if (!isLocal(host) && isAlive(host)) {
+				} else if (isAlive(host)) {
 					for (int i = 0; i < getCoresNumber(host); i++) {
 						if (hostAlive.size() < nbWorker) {
 							// add to our list of cores alive
@@ -277,15 +283,29 @@ public class SSHManager {
 	 * @param worker
 	 * @return true if it's the master
 	 */
+	public boolean isMaster(String worker) {
+		boolean master = false;
+		if (worker.equalsIgnoreCase(hostFullMaster)) {
+			// the worker is the master
+			master = true;
+		}
+		return master;
+	}
+
+	
+	/**
+	 * Return true if the worker is local
+	 * @param worker
+	 * @return true if it's local
+	 */
 	public boolean isLocal(String worker) {
 		boolean local = false;
 		if (worker.equalsIgnoreCase(hostFull)) {
-			// the worker is the master
 			local = true;
 		}
 		return local;
 	}
-
+	
 	
 	public String getDsaKey() {
 		return dsaKey;
@@ -294,6 +314,11 @@ public class SSHManager {
 	
 	public String getHostFull() {
 		return hostFull;
+	}
+	
+	
+	public String getHostFullMaster() {
+		return hostFullMaster;
 	}
 	
 	
@@ -309,6 +334,11 @@ public class SSHManager {
 	
 	public String getHost() {
 		return host;
+	}
+
+
+	public void setHostFullMaster(String hostFullMaster) {
+		this.hostFullMaster = hostFullMaster;
 	}
 		
 }

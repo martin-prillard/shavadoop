@@ -45,8 +45,7 @@ public class CheckStateSlave extends Thread {
 		        if (slaveAliveString != null && slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED)) {
 		        	stateSlaveManager.caseWorkerTaskIsFinished();
 		        // else get the slave's state
-		        } else if (slaveAliveString == null 
-		        		|| slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_KO)) {
+		        } else if (slaveAliveString == null) {
 		        	stateSlaveManager.caseWorkerDied();
 		        }
 		        

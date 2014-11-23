@@ -1,6 +1,7 @@
 package fr.telecompt.shavadoop.slave;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -18,8 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.jcabi.ssh.SSH;
-import com.jcabi.ssh.Shell;
+import org.apache.commons.io.FilenameUtils;
 
 import fr.telecompt.shavadoop.network.FileTransfert;
 import fr.telecompt.shavadoop.network.SSHManager;
@@ -46,6 +46,7 @@ public class Slave {
 	private String fileToTreat;
 	private SSHManager sm;
 	private boolean state = true;
+	private String msgError = "DEFAULT_MESSAGE";
 	private int portMasterDictionary;
 	private int portTaskTracker;
 	private volatile ConcurrentHashMap<String, Integer> finalMapsInMemory = new ConcurrentHashMap<String, Integer>();
@@ -69,7 +70,7 @@ public class Slave {
     public void launchTask() {
     	
 		// initialize the SSH manager
-    	sm = new SSHManager();
+    	sm = new SSHManager(hostMaster);
     	sm.initialize();
     	
     	if (Constant.TASK_TRACKER) {
@@ -106,12 +107,13 @@ public class Slave {
 	    		
 	    		// slav file -> master
     			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
-    			esScpFile.execute(new FileTransfert(sm, null, hostMaster, fileToAssemble, fileToAssemble, false));
+    			esScpFile.execute(new FileTransfert(sm, hostMaster, fileToAssemble, fileToAssemble, true, false));
 				esScpFile.shutdown();
 	    		try {
 	    			esScpFile.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
 	    		} catch (InterruptedException e) {
 	    			e.printStackTrace();
+	    			msgError = e.getMessage();
 	    			state = false;
 	    		}
 	    		break;
@@ -179,6 +181,7 @@ public class Slave {
         	 
          } catch (Exception e) {
              e.printStackTrace();
+             msgError = e.getMessage();
              state = false;
          }
     }
@@ -261,11 +264,10 @@ public class Slave {
      * Launch shuffling map process for each UM files in the DSM file
      */
     private ConcurrentHashMap<String, List<Integer>> launchShufflingMapThread(int threadMaxByWorker, int threadQueueMaxByWorker) {
-		ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
 		
 		ConcurrentHashMap<String, List<Integer>> sortedMaps = new ConcurrentHashMap<String, List<Integer>>();
 		
-		Map<String, Shell> shellsMap = new HashMap<String, Shell>();
+		HashMap<String, List<String>> filesByHost = new HashMap<String, List<String>>();
 		
 		try{
 		    InputStream ips = new FileInputStream(fileToTreat); 
@@ -279,28 +281,80 @@ public class Slave {
 				String host = elements[0];
 				String fileToShuffling = elements[1];
 				
-				if (!sm.isLocal(host) && !shellsMap.containsKey(host)) {
-					shellsMap.put(host, new SSH(host, sm.getShellPort(), Constant.USERNAME, sm.getDsaKey()));
-				} 
-				
-				// excute the shuffling map on it
-				es.execute(new ShufflingMapThread(sm, shellsMap.get(host), this, sortedMaps, host, fileToShuffling));
+				// sort each files by host
+				List<String> files;
+				if (!filesByHost.containsKey(host)) {
+					files = new ArrayList<String>();
+				} else {
+					files = filesByHost.get(host);
+				}
+				files.add(fileToShuffling);
+				filesByHost.put(host, files);
 			}
 			
 			br.close();
 			ipsr.close();
 			br.close();
 			
+			ExecutorService es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
+			
+			for (Entry<String, List<String>> e : filesByHost.entrySet()) {
+				
+				String listFileToShuffling = "";
+				
+				// files by host
+				for (String fileToShuffling : e.getValue()) {
+					
+					String  fileToShufflingDest = Constant.PATH_REPO_RES 
+							+ FilenameUtils.getName(fileToShuffling);
+					
+					if (!new File(fileToShufflingDest).exists()) {
+						listFileToShuffling += fileToShufflingDest + ",";
+					}
+				}
+				
+				// remove the last char
+				if (listFileToShuffling.length() > 0) {
+					listFileToShuffling = listFileToShuffling.substring(0, listFileToShuffling.length()-1);
+				}
+				
+				// launch bulk transfert file slave/master files UM -> slave
+				es.execute(new FileTransfert(sm, e.getKey(), listFileToShuffling, Constant.PATH_REPO_RES, false, true));
+				
+			}
+			
 			es.shutdown();
 			try {
 				es.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
+				msgError = e.getMessage();
 				state = false;
 			}
 			
+			es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
+			
+			// for each files
+			for (Entry<String, List<String>> e : filesByHost.entrySet()) {
+				// files by host
+				for (String fileToShuffling : e.getValue()) {
+					// launch shuffling map
+					es.execute(new ShufflingMapThread(this, sortedMaps, fileToShuffling));
+				}
+			}
+			
+			es.shutdown();
+			try {
+				es.awaitTermination(Integer.parseInt(prop.getPropValues(PropReader.THREAD_MAX_LIFETIME)), TimeUnit.MINUTES);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				msgError = e.getMessage();
+				state = false;
+			}
+
 		} catch (IOException e) {
 			System.out.println("No shuffling dictionary file : " + fileToTreat);
+			msgError = e.getMessage();
 			state = false;
 		}
 		
@@ -330,63 +384,11 @@ public class Slave {
              
          } catch (Exception e) {
              e.printStackTrace();
+             msgError = e.getMessage();
              state = false;
          }
     }
-    
-//    /**
-//     * Group and sort maps results by key
-//     * @param file
-//     * @return sorted maps
-//     */
-//    public void shufflingMaps(String file) {
-//    	// concat data of each files in one list
-//    	try {
-//             FileReader fic = new FileReader(file);
-//             BufferedReader read = new BufferedReader(fic);
-//             String line = null;
-//
-//             // For each lines of the file
-//             while ((line = read.readLine()) != null) {
-//	            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
-//	            String word = words[0];
-//	            int counter = Integer.parseInt(words[1]);
-//	            sortedMaps.putIfAbsent(word, new ArrayList<Integer>());
-// 				sortedMaps.get(word).add(counter);
-//             } 
-//             fic.close();
-//             read.close();   
-//	             
-//         } catch (Exception e) {
-//             e.printStackTrace();
-//             state = false;
-//         }
-//    }
-   
-    
-//    /**
-//     * Reduce method in-memory
-//     * @param sortedMaps
-//     */
-//    public void mappingSortedMapsInMemory(ConcurrentHashMap<String, List<Integer>> sortedMaps) {
-//		 try {
-//
-// 			// concat the localFinalMaps with the finalMapsInMemory
-// 			for (Entry<String, List<Integer>> e : sortedMaps.entrySet()) {
-// 				String word = e.getKey();
-// 				List<Integer> listCounter = e.getValue();
-// 				int counterTotal = 0;
-// 				for(int i : listCounter) {
-// 					counterTotal += i;
-// 				}
-//				finalMapsInMemory.put(word, counterTotal);
-// 			}
-//             
-//         } catch (Exception e) {
-//             e.printStackTrace();
-//             state = false;
-//         }
-//    }
+  
     
 	public boolean isState() {
 		return state;
@@ -400,6 +402,16 @@ public class Slave {
 	
 	public boolean isTaskFinished() {
 		return taskFinished;
+	}
+
+
+	public String getMsgError() {
+		return msgError;
+	}
+
+
+	public void setMsgError(String msgError) {
+		this.msgError = msgError;
 	}
 	
 }

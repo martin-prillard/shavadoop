@@ -57,6 +57,27 @@ public class Util {
 	
 	
 	/**
+	 * Write a file from String
+	 * @param nameFile
+	 * @param content
+	 */
+	public static void writeFile(String nameFile, String content) {
+		try {
+			FileWriter fw = new FileWriter(nameFile);
+			BufferedWriter bw = new BufferedWriter (fw);
+			PrintWriter write = new PrintWriter (bw); 
+			
+			write.print(content); 
+			
+			write.close();
+			bw.close();
+			fw.close();
+		}
+		catch (Exception e){e.printStackTrace();}
+	}
+	
+	
+	/**
 	 * Write a file from list of string
 	 * @param nameFile
 	 * @param content

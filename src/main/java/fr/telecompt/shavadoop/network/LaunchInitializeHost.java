@@ -75,7 +75,7 @@ public class LaunchInitializeHost extends Thread {
 		}
 		
 		// master Jar -> master / slave
-		FileTransfert ft = new FileTransfert(sm, null, host, Constant.PATH_SHAVADOOP_JAR, Constant.PATH_JAR, true);
+		FileTransfert ft = new FileTransfert(sm, host, Constant.PATH_JAR_MASTER, Constant.PATH_JAR, true, false);
 		ft.start();
 	}
 	

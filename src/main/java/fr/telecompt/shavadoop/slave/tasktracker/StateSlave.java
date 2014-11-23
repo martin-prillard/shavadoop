@@ -104,7 +104,7 @@ public class StateSlave extends Thread {
 				out.println(stateString);
 				out.flush();
 	        } else {
-	        	stateString = Constant.ANSWER_TASKTRACKER_REQUEST_KO;
+	        	stateString = slave.getMsgError();
 				out.println(stateString);
 				out.flush();
 	        	stopStateSlave();
