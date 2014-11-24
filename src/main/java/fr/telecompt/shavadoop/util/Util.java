@@ -18,6 +18,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +37,7 @@ public class Util {
 	 * @param nameFile
 	 * @param content
 	 */
-	public static void writeFile(String nameFile, Map<String, Integer> content) {
+	public static void writeFileFromMap(String nameFile, Map<String, Integer> content) {
 		try {
 			FileWriter fw = new FileWriter(nameFile);
 			BufferedWriter bw = new BufferedWriter (fw);
@@ -46,6 +47,31 @@ public class Util {
 			    write.println (entry.getKey()
 			    		+ Constant.SEP_CONTAINS_FILE
 			    		+ entry.getValue()); 
+			}
+			
+			write.close();
+			bw.close();
+			fw.close();
+		}
+		catch (Exception e){e.printStackTrace();}
+	}
+	
+	
+	/**
+	 * Write a file from map
+	 * @param nameFile
+	 * @param content
+	 */
+	public static void writeFileFromMapAtomic(String nameFile, Map<String, AtomicInteger> content) {
+		try {
+			FileWriter fw = new FileWriter(nameFile);
+			BufferedWriter bw = new BufferedWriter (fw);
+			PrintWriter write = new PrintWriter (bw); 
+			
+			for(Entry<String, AtomicInteger> entry : content.entrySet()) {
+			    write.println (entry.getKey()
+			    		+ Constant.SEP_CONTAINS_FILE
+			    		+ entry.getValue().get()); 
 			}
 			
 			write.close();
@@ -277,19 +303,18 @@ public class Util {
     	File inputFile = new File(file);
 		FileInputStream inputStream;
 		FileOutputStream filePart;
-		int fileSize = (int) inputFile.length();
+		long fileSize = inputFile.length();
 		int nbFile = 0;
 		int read = 0;
 		int readLength = Constant.BLOC_SIZE_MIN;
-		
 		byte[] byteChunkPart;
 		
 		try {
 			inputStream = new FileInputStream(inputFile);
 			
 			while (fileSize > 0) {
-				if (fileSize <= Constant.BLOC_SIZE_MIN) {
-					readLength = fileSize;
+				if (Constant.BLOC_SIZE_MIN > fileSize) {
+					readLength = (int) fileSize;
 				}
 				
 				byteChunkPart = new byte[readLength];

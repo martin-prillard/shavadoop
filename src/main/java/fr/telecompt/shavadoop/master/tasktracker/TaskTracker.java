@@ -142,7 +142,7 @@ public class TaskTracker extends Thread {
 		Thread newTask = null;
 		switch(taskName){
 			case Slave.SPLIT_MAPPING_FUNCTION:
-				newTask = new LaunchSplitMapping(sm, nbWorker, newHost, fileTask, sm.isLocal(newHost), hostMaster, idWorker);
+				newTask = new LaunchSplitMapping(sm, nbWorker, newHost, fileTask, hostMaster, idWorker);
 				es.execute(newTask);
 				break;
 			case Slave.SHUFFLING_MAP_FUNCTION:

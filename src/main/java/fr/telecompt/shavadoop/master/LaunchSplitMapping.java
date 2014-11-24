@@ -26,16 +26,14 @@ import fr.telecompt.shavadoop.util.Constant;
 public class LaunchSplitMapping extends ShellThread {
 	
 	private String hostMapper;
-	private boolean local;
 	private String idWorker;
 	private String nbWorker;
 	
 	
-	public LaunchSplitMapping(SSHManager _sm, String _nbWorker, String _distantHost, String _fileToTreat, boolean _local, String _hostMapper, String _idWorker) {
+	public LaunchSplitMapping(SSHManager _sm, String _nbWorker, String _distantHost, String _fileToTreat, String _hostMapper, String _idWorker) {
 		super(_sm, _distantHost, _fileToTreat);
 		nbWorker = _nbWorker;
 		hostMapper = _hostMapper;
-		local = _local;
 		idWorker = _idWorker;
 	}
 	
@@ -45,8 +43,8 @@ public class LaunchSplitMapping extends ShellThread {
 			String pathJar = Constant.PATH_JAR_MASTER;
 			String method = Slave.SPLIT_MAPPING_FUNCTION;
 	
-			// execute on the master's computer
-			if(local) {
+			// execute on the master
+			if (sm.isLocal(distantHost)) {
 				// Run a java app in a separate system process
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
@@ -88,7 +86,7 @@ public class LaunchSplitMapping extends ShellThread {
 	        if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker failed was interrupted");
 	    } catch (Exception e) {
 	        if (!isInterrupted()) { // if other exceptions
-	        	System.out.println("Fail to launch shavadoop slave from " + distantHost);
+	        	System.out.println("Fail to launch shavadoop slave from " + distantHost + " : " + e.getMessage());
 	        } else { 
 	        	if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker failed was interrupted");
 	        }

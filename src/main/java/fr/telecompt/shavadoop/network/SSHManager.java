@@ -43,7 +43,6 @@ public class SSHManager {
 	private String username = System.getProperty("user.name");
 	private String homeDirectory = System.getProperty("user.home");
 	private String ipAdress;
-	private Set<String> initializedHost = new HashSet<String>();
 	
 	
 	public SSHManager(String _hostFullMaster) {
@@ -94,6 +93,7 @@ public class SSHManager {
 		if (Constant.MODE_DEBUG) System.out.println("Search " + nbWorker + " worker(s) alive...");
 		
 		List<String> hostAlive = new ArrayList<String>();
+		Set<String> initializedHost = new HashSet<String>();
 		
 		ExecutorService es = Executors.newCachedThreadPool();
 		
@@ -187,7 +187,7 @@ public class SSHManager {
     	List<String> hostnameMappers = new ArrayList<String>();
 
 		// check first for this computer : the master is the worker
-    	int cores = Runtime.getRuntime().availableProcessors();
+    	int cores = Runtime.getRuntime().availableProcessors() - 1;
 		for (int i = 0; i < cores; i++) {
 			hostnameMappers.add(hostFull);
 		}

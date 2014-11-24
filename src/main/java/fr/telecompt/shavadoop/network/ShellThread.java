@@ -20,8 +20,6 @@ public class ShellThread extends Thread {
 	protected int nbWorkerMax;
 	protected String username;
 	protected SSHManager sm;
-	protected boolean local = false;
-	
 	
 	public ShellThread(SSHManager _sm, String _distantHost, String _fileToTreat) {
 		sm = _sm;
@@ -32,8 +30,6 @@ public class ShellThread extends Thread {
 		shellPort = sm.getShellPort();
 		dsaKey = sm.getDsaKey();
 		
-		local = sm.isLocal(distantHost);
-				
 		PropReader prop = new PropReader();
 		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
 	}

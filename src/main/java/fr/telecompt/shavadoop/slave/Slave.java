@@ -17,7 +17,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -103,7 +105,7 @@ public class Slave {
            			 + idWorker
            			 + Constant.SEP_NAME_FILE 
            			 + sm.getHostFull();
-    			Util.writeFile(fileToAssemble, finalMapsInMemory);
+    			Util.writeFileFromMap(fileToAssemble, finalMapsInMemory);
 	    		
 	    		// slav file -> master
     			ExecutorService esScpFile = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
@@ -133,31 +135,63 @@ public class Slave {
      */
     private void splitMapping(int nbWorker, String hostMaster, String fileToMap) {
 		 try {
-             FileReader fic = new FileReader(fileToMap);
-             BufferedReader read = new BufferedReader(fic);
-             String line = null;
-             
+			 
+			 // get the file into a list
+			 int totalLine = Util.getFileNumberLine(fileToMap);
+			 
+			 // initialize unsorted maps
+             List<ConcurrentHashMap<String, AtomicInteger>> unsortedMaps = new ArrayList<ConcurrentHashMap<String, AtomicInteger>>();
+             for (int i = 0; i < nbWorker; i++) {
+            	 unsortedMaps.add(new ConcurrentHashMap<String, AtomicInteger>());
+             }
+             // initialize part directory
              Map<String, Pair> partDictionary = new HashMap<String, Pair>();
              int idNextWorker = 0;
              
-             List<HashMap<String, Integer>> unsortedMaps = new ArrayList<HashMap<String, Integer>>();
-             for (int i = 0; i < nbWorker; i++) {
-            	 unsortedMaps.add(new HashMap<String, Integer>());
-             }
-             
-             while ((line = read.readLine()) != null) {
-            	// clean the line
- 			    line = cleanLine(line);
- 			    // don't write out blank lines
- 			    if (!line.equals("") || !line.isEmpty()) {
- 	            	 unsortedMaps = wordCount(nbWorker, unsortedMaps, line);
- 			    }
-             }
-             
-             fic.close();
-             read.close();   
-
-        	 for (HashMap<String, Integer> e : unsortedMaps) {
+			 if (totalLine > 0) { //TODO see how it's possible	
+	             
+	             // find the number of thread
+	             int nbChunks = Constant.THREAD_MAX_SPLIT_MAPPING;
+	             if (Constant.THREAD_MAX_SPLIT_MAPPING > totalLine) {
+	            	 nbChunks = totalLine; // one thread by line
+	             } 
+	             int restLineByThread = totalLine % nbChunks;
+	             // Calculate the number of lines for each thread
+	             int nbLineByThread = (totalLine - restLineByThread) / (nbChunks);
+	             
+	             ExecutorService es = Executors.newCachedThreadPool();
+	             
+	             // split the main list into smaller list for paralleling
+	             List<String> chunk = new ArrayList<String>();
+	             int nbChunksCreated = 0;
+	 			
+	             FileReader fic = new FileReader(fileToMap);
+	             BufferedReader read = new BufferedReader(fic);
+	             String line = null;
+	             
+	             // For each lines of the file
+	             while ((line = read.readLine()) != null) {
+	    			 // add line cleaned to the chunk
+	            	 chunk.add(line);
+	    			 // write the complete file by block or if it's the end of the file
+	    			 if ((chunk.size() == nbLineByThread && nbChunksCreated < nbChunks - 1)
+	    					 || (chunk.size() == nbLineByThread + restLineByThread && nbChunksCreated == nbChunks - 1)) {
+	    				 es.execute(new SplitMappingThread(unsortedMaps, chunk, nbWorker));
+	    				 ++nbChunksCreated;
+	    			   	 chunk = new ArrayList<String>();
+	    			 }
+	             } 
+	             fic.close();
+	             read.close();
+	             
+	        	 es.shutdown();
+	    		 try {
+	    			 es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+	    		 } catch (InterruptedException e) {e.printStackTrace();}
+			 }
+			 
+             // write the file
+        	 for (ConcurrentHashMap<String, AtomicInteger> e : unsortedMaps) {
         		 if (!e.isEmpty()) {
 	                 // Write UM File
 	            	 String fileToShuffle = Constant.PATH_F_MAPPING 
@@ -170,7 +204,7 @@ public class Slave {
 	               			 + Constant.SEP_NAME_FILE 
 	               			 + sm.getHostFull();
 	            	 
-	        		 Util.writeFile(fileToShuffle, e);
+	        		 Util.writeFileFromMapAtomic(fileToShuffle, e);
 	        		 partDictionary.put(String.valueOf(idNextWorker), new Pair(sm.getHostFull(), fileToShuffle));
 	        		 ++idNextWorker;
         		 }
@@ -186,60 +220,6 @@ public class Slave {
          }
     }
 
-    
-    /**
-     * Clean the line
-     * @param line
-     * @return line clean
-     */
-    public String cleanLine(String line) {
-    	String clean = line;
-    	clean = clean.trim();
-    	// clean the non alpha numeric character or space
-    	clean = clean.replaceAll("[^a-zA-Z0-9\\s]", "");
-    	// just one space beetween each words
-    	clean = clean.replaceAll("\\s+", " ");
-    	clean = clean.replaceAll("\\t+", " ");
-    	return clean;
-    }
-    
-    
-    /**
-     * Count the occurence of each word in the sentence
-     * @param line
-     * @return res
-     */
-    private List<HashMap<String, Integer>> wordCount(int nbWorker, List<HashMap<String, Integer>> mapWc, String line) {
-    	// split the line word by word
-    	String words[] = line.split(Constant.SEP_WORD);
-    	
-    	for (int i = 0; i < words.length; i++) {
-    		String word = words[i];
-    		// add counter value for this word
-    		int idNextWorker =  getIdNextWorker(word, nbWorker);
-    		// increment like the hadoop combiner
-    		if (mapWc.get(idNextWorker).containsKey(word)) {
-    			int oldCounter = mapWc.get(idNextWorker).get(word);
-    			mapWc.get(idNextWorker).put(word, ++oldCounter);
-    		} else {
-    			mapWc.get(idNextWorker).put(word, 1);
-    		}
-    	}
-    	
-    	return mapWc;
-    }
-    
-    
-    /**
-     * Return the id next worker from the key
-     * @param key
-     * @param nbWorker
-     * @return id next worker
-     */
-    private int getIdNextWorker(String key, int nbWorker) {
-    	return Math.abs((int) (Util.simpleHash(key) % nbWorker));
-    }
-    
     
     /**
      * Send to the master the id next worker and the names of files to do treat by the next worker

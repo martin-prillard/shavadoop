@@ -40,7 +40,9 @@ public class CheckStateSlave extends Thread {
 		        // get the state slave
 				String slaveAliveString = in.readLine();
 				
-				if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER receive slave's state : " + slaveAliveString + " (" + hostClient + ")");
+				if (slaveAliveString!= null && !slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_OK)) {
+					if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER receive slave's state : " + slaveAliveString + " (" + hostClient + ")");
+				}
 		        
 		        if (slaveAliveString != null && slaveAliveString.equalsIgnoreCase(Constant.ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED)) {
 		        	stateSlaveManager.caseWorkerTaskIsFinished();

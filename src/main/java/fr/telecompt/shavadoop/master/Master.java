@@ -37,10 +37,8 @@ public class Master {
 	
 	private int portMasterDictionary;
 	private int portTaskTracker;
-	private int nbWorkerMax;
 	private int nbWorker;
 	private SSHManager sm;
-	private int nbWorkerMappers;
 	private double startTime;
 	private String fileToTreat;
 	private List<String> workersCores;
@@ -92,7 +90,7 @@ public class Master {
     	
 		// get values from properties file
     	fileToTreat = prop.getPropValues(PropReader.FILE_INPUT);
-		nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
+    	int nbWorkerMax = Integer.parseInt(prop.getPropValues(PropReader.WORKER_MAX));
     	portMasterDictionary = Integer.parseInt(prop.getPropValues(PropReader.PORT_MASTER_DICTIONARY));
     	portTaskTracker = Integer.parseInt(prop.getPropValues(PropReader.PORT_TASK_TRACKER));
 		if (Constant.MODE_DEBUG) {
@@ -198,9 +196,7 @@ public class Master {
     	
     	List<String> filesToMap;
 
-    	nbWorkerMappers = workers.size();
-    	
-        if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + (nbWorkerMappers) + " " + workers);
+        if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + (nbWorker) + " " + workers);
         
          long sizeFileToTreat = new File(fileToTreat).length();
          int totalBloc;
@@ -214,24 +210,24 @@ public class Master {
          }
          
          // if too more worker available for map process
-         if (nbWorkerMappers > totalBloc) {
-        	 nbWorkerMappers = totalBloc;
+         if (nbWorker > totalBloc) {
+        	 nbWorker = totalBloc;
          }
          
          // split by line
          if (sizeFileToTreat < Constant.BLOC_SIZE_MIN) {
              // the rest of the division for the last host
-             int restBlocByHost = totalBloc % nbWorkerMappers;
+             int restBlocByHost = totalBloc % nbWorker;
              // Calculate the number of lines for each host
-             int nbBlocByHost = (totalBloc - restBlocByHost) / (nbWorkerMappers);
-             if (Constant.MODE_DEBUG) System.out.println("Nb line to tread : " + (totalBloc));
+             int nbBlocByHost = (totalBloc - restBlocByHost) / (nbWorker);
              if (Constant.MODE_DEBUG) System.out.println("Nb line by host mapper : " + (nbBlocByHost));
              if (Constant.MODE_DEBUG) System.out.println("Nb line for the last host mapper : " + (restBlocByHost));
-             filesToMap =  Util.splitByLineFile(fileToTreat, nbBlocByHost, restBlocByHost, nbWorkerMappers);
+             filesToMap =  Util.splitByLineFile(fileToTreat, nbBlocByHost, restBlocByHost, nbWorker);
+             if (Constant.MODE_DEBUG) System.out.println("Nb line to tread : " + (filesToMap.size()));
          } else {
         	// split by bloc
-             if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) to tread : " + (totalBloc));
              filesToMap = Util.splitLargeFile(fileToTreat);
+             if (Constant.MODE_DEBUG) System.out.println("Nb bloc (" + Constant.BLOC_SIZE_MIN + " MB) to tread : " + (filesToMap.size()));
          }
 		 
 		 return filesToMap;
@@ -253,25 +249,28 @@ public class Master {
 			es.execute(ts);
 		}
 		
-		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + workersMapperCores.size());
-		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + filesToMap.size());
+		int sizeFilesToMap = filesToMap.size();
+		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + nbWorker);
+		if (Constant.MODE_DEBUG) System.out.println("Nb files splitted : " + sizeFilesToMap);
 		
 		// dictionary
 		ConcurrentHashMap<String, HashSet<Pair>> dicoMapping = new ConcurrentHashMap<String, HashSet<Pair>>();
     	// listener to get part dictionary from the worker mappers
-    	es.execute(new DictionaryManager(portMasterDictionary, nbWorkerMappers, dicoMapping));
+    	es.execute(new DictionaryManager(portMasterDictionary, nbWorker, dicoMapping));
     	
     	int idWorkerMapperCore = 0;
     	
 		// for each files to map
-    	for (int i = 0; i < filesToMap.size(); i++) {
+    	for (int i = 0; i < sizeFilesToMap; i++) {
     		int id = i;
-    		if (nbWorker <= filesToMap.size()) {
+    		if (nbWorker <= sizeFilesToMap && id >= nbWorker) {
     			// for blocs, it's sequential
-    			id = filesToMap.size() % nbWorker;
+    			id =  idWorkerMapperCore % nbWorker;
+    		} else {
+    			id = i;
     		}
     		String worker = workersMapperCores.get(id);
-	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), worker, filesToMap.get(i), sm.isLocal(worker), sm.getHost(), Integer.toString(idWorkerMapperCore));
+	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), worker, filesToMap.get(i), sm.getHost(), Integer.toString(idWorkerMapperCore));
 			es.execute(smt);
 			if (Constant.TASK_TRACKER) {
 				ts.addTask(smt, worker, Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
@@ -282,8 +281,6 @@ public class Master {
     	if (!Constant.TASK_TRACKER) {
     		es.shutdown();
     	}
-    	
-		// wait while all the threads are not finished yet
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}
@@ -346,7 +343,6 @@ public class Master {
 		if (!Constant.TASK_TRACKER) {
 			es.shutdown();
 		}
-		
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}
@@ -393,13 +389,12 @@ public class Master {
 		}
 		 
         es.shutdown();
-        
  		try {
  			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}
  		
  		// write the final result
-    	Util.writeFile(fileFinalResult, finalResult);
+    	Util.writeFileFromMap(fileFinalResult, finalResult);
     }
 
 }

@@ -49,8 +49,8 @@ public class LaunchShufflingMap extends ShellThread {
 			String pathJar = Constant.PATH_JAR_MASTER;
 			String method = Slave.SHUFFLING_MAP_FUNCTION;
 			
-			// execute on the master's computer
-			if(local) {
+			// execute on the master
+			if (sm.isLocal(distantHost)) {
 				// Run a java app in a separate system process
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
@@ -94,7 +94,7 @@ public class LaunchShufflingMap extends ShellThread {
             if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker failed was interrupted");
         } catch (Exception e) {
             if (!isInterrupted()) { // if other exceptions
-            	System.out.println("Fail to launch shavadoop slave from " + distantHost);
+            	System.out.println("Fail to launch shavadoop slave from " + distantHost + " : " + e.getMessage());
             } else { 
             	if (Constant.MODE_DEBUG) System.out.println("TASK_TRACKER : worker failed was interrupted");
             }
