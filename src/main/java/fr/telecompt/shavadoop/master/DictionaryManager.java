@@ -19,13 +19,13 @@ import fr.telecompt.shavadoop.util.Pair;
 public class DictionaryManager extends Thread {
 
 	private int portMaster;
-	private int nbWorkerMappers;
+	private int sizeFilesToMap;
 	private ConcurrentHashMap<String, HashSet<Pair>> dictionary;
 	
 	
-	public DictionaryManager(int _portMaster, int _nbWorkerMappers, ConcurrentHashMap<String, HashSet<Pair>> _dictionary) {
+	public DictionaryManager(int _portMaster, int _sizeFilesToMap, ConcurrentHashMap<String, HashSet<Pair>> _dictionary) {
 		portMaster = _portMaster;
-		nbWorkerMappers = _nbWorkerMappers;
+		sizeFilesToMap = _sizeFilesToMap;
 		dictionary = _dictionary;
 	}
 	
@@ -40,7 +40,7 @@ public class DictionaryManager extends Thread {
 	    	ExecutorService es = Executors.newCachedThreadPool();
 	    	
 	    	// While we haven't received all elements dictionary from the mappers
-	    	for (int i = 0; i < nbWorkerMappers; i++) {
+	    	for (int i = 0; i < sizeFilesToMap; i++) {
 				es.execute(new ListenerDictionary(ss, dictionary));
 	    	}
 	    	es.shutdown();

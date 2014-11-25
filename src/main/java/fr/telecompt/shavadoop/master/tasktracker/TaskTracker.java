@@ -37,7 +37,7 @@ public class TaskTracker extends Thread {
 	public TaskTracker(SSHManager _sm, ExecutorService _es, int _portTaskTracker, String _nbWorker, Map<String, String> _dictionaryReducing) {
 		sm = _sm;
 		es = _es;
-		hostMaster = sm.getHost();
+		hostMaster = sm.getHostFull();
 		portTaskTracker = _portTaskTracker;
 		nbWorker = _nbWorker;
 		dictionaryReducing = _dictionaryReducing;

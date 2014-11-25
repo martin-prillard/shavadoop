@@ -102,7 +102,7 @@ public class StateSlaveManager extends Thread {
 		String hostFail = host;
 		
 		// we get an other worker
-		List<String> hostWorker = sm.getHostAliveCores(1, true);
+		List<String> hostWorker = sm.getHostAliveCores(1, true, false);
 		if (hostWorker.size() == 1) {
 			host = hostWorker.get(0);
 		} else {

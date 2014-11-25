@@ -75,11 +75,9 @@ public class Slave {
     	sm = new SSHManager(hostMaster);
     	sm.initialize();
     	
-    	if (Constant.TASK_TRACKER) {
-	    	// launch thread slave state for the task tracker
-	    	StateSlave sst = new StateSlave(this, hostMaster, portTaskTracker);
-	    	sst.start();
-    	}
+    	// launch thread slave state for the task tracker
+    	StateSlave sst = new StateSlave(this, hostMaster, portTaskTracker);
+    	sst.start();
     	
     	switch (functionName){
     	
@@ -206,8 +204,8 @@ public class Slave {
 	            	 
 	        		 Util.writeFileFromMapAtomic(fileToShuffle, e);
 	        		 partDictionary.put(String.valueOf(idNextWorker), new Pair(sm.getHostFull(), fileToShuffle));
-	        		 ++idNextWorker;
         		 }
+        		 ++idNextWorker;
         	 }
         	 
         	 // send dictionary with UNIQUE key (word) and hostname to the master
@@ -289,17 +287,20 @@ public class Slave {
 							+ FilenameUtils.getName(fileToShuffling);
 					
 					if (!new File(fileToShufflingDest).exists()) {
-						listFileToShuffling += fileToShufflingDest + ",";
+						listFileToShuffling += fileToShufflingDest + Constant.SEP_SCP_FILES;
 					}
 				}
 				
 				// remove the last char
-				if (listFileToShuffling.length() > 0) {
+				if (listFileToShuffling.length() > 0 
+						&& listFileToShuffling.charAt(listFileToShuffling.length()-1) == Constant.SEP_SCP_FILES.charAt(0)) {
 					listFileToShuffling = listFileToShuffling.substring(0, listFileToShuffling.length()-1);
 				}
 				
 				// launch bulk transfert file slave/master files UM -> slave
-				es.execute(new FileTransfert(sm, e.getKey(), listFileToShuffling, Constant.PATH_REPO_RES, false, true));
+				if(!listFileToShuffling.equalsIgnoreCase("")) {
+					es.execute(new FileTransfert(sm, e.getKey(), listFileToShuffling, Constant.PATH_REPO_RES, false, true));
+				}
 				
 			}
 			

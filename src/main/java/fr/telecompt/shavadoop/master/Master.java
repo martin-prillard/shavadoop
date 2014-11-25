@@ -102,7 +102,7 @@ public class Master {
 			Constant.PATH_JAR_MASTER = URLDecoder.decode(Constant.PATH_JAR_MASTER_TODECODE, "UTF-8");
     	} catch (UnsupportedEncodingException e) {e.printStackTrace();}
     	// get workers
-		workersCores = sm.getHostAliveCores(nbWorkerMax, false);
+		workersCores = sm.getHostAliveCores(nbWorkerMax, false, true);
 		nbWorker = workersCores.size();
 		if (Constant.MODE_DEBUG) {
 			System.out.println("Workers core : " + workersCores); 
@@ -129,7 +129,7 @@ public class Master {
 		
         // split the file : master
 		if (Constant.MODE_DEBUG) {
-			System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting");
+			System.out.println(Constant.APP_DEBUG_TITLE + " Input splitting on " + fileToTreat);
 			st = System.currentTimeMillis();
 		}
 		List<String> filesToMap = inputSplitting(workersCores, fileToTreat);
@@ -243,11 +243,8 @@ public class Master {
     private Map<String, HashSet<Pair>> launchSplitMappingThreads(List<String> workersMapperCores, List<String> filesToMap) {
 		// object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = null;
-		if (Constant.TASK_TRACKER) {
-			ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), null);
-			es.execute(ts);
-		}
+		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), null);
+		es.execute(ts);
 		
 		int sizeFilesToMap = filesToMap.size();
 		if (Constant.MODE_DEBUG) System.out.println("Nb workers mappers : " + nbWorker);
@@ -256,7 +253,7 @@ public class Master {
 		// dictionary
 		ConcurrentHashMap<String, HashSet<Pair>> dicoMapping = new ConcurrentHashMap<String, HashSet<Pair>>();
     	// listener to get part dictionary from the worker mappers
-    	es.execute(new DictionaryManager(portMasterDictionary, nbWorker, dicoMapping));
+    	es.execute(new DictionaryManager(portMasterDictionary, sizeFilesToMap, dicoMapping));
     	
     	int idWorkerMapperCore = 0;
     	
@@ -270,17 +267,12 @@ public class Master {
     			id = i;
     		}
     		String worker = workersMapperCores.get(id);
-	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), worker, filesToMap.get(i), sm.getHost(), Integer.toString(idWorkerMapperCore));
+	    	Thread smt = new LaunchSplitMapping(sm, String.valueOf(nbWorker), worker, filesToMap.get(i), sm.getHostFull(), Integer.toString(idWorkerMapperCore));
 			es.execute(smt);
-			if (Constant.TASK_TRACKER) {
-				ts.addTask(smt, worker, Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
-			}
+			ts.addTask(smt, worker, Integer.toString(idWorkerMapperCore), Slave.SPLIT_MAPPING_FUNCTION, filesToMap.get(i), null);
 			++idWorkerMapperCore;
     	}
     	
-    	if (!Constant.TASK_TRACKER) {
-    		es.shutdown();
-    	}
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}
@@ -301,11 +293,8 @@ public class Master {
 		
 		// object to synchronize threads
 		ExecutorService es = Executors.newCachedThreadPool();
-		TaskTracker ts = null;
-		if (Constant.TASK_TRACKER) {
-			ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dicoReducing);
-			es.execute(ts);
-		}
+		TaskTracker ts = new TaskTracker(sm, es, portTaskTracker, String.valueOf(nbWorker), dicoReducing);
+		es.execute(ts);
 		
 		// for each key and files to shuffling maps
 		for (Entry<String, HashSet<Pair>> e : dictionaryMapping.entrySet()) {
@@ -333,16 +322,11 @@ public class Master {
 			dicoReducing.put(Integer.toString(idWorkerReducerCore), workerReducer);
 			
 			// launch shuffling map process
-			Thread smt = new LaunchShufflingMap(sm, String.valueOf(nbWorker), workerReducer, shufflingDictionaryFile, sm.getHost(), Integer.toString(idWorkerReducerCore));
+			Thread smt = new LaunchShufflingMap(sm, String.valueOf(nbWorker), workerReducer, shufflingDictionaryFile, sm.getHostFull(), Integer.toString(idWorkerReducerCore));
 			es.execute(smt);
-			if (Constant.TASK_TRACKER) {
-				ts.addTask(smt, workerReducer, Integer.toString(idWorkerReducerCore), Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
-			}
+			ts.addTask(smt, workerReducer, Integer.toString(idWorkerReducerCore), Slave.SHUFFLING_MAP_FUNCTION, shufflingDictionaryFile, e.getKey());
 		}
-		
-		if (!Constant.TASK_TRACKER) {
-			es.shutdown();
-		}
+
 		try {
 			es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
 		} catch (InterruptedException e) {e.printStackTrace();}

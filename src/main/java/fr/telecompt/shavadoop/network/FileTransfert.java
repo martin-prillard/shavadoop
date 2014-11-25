@@ -1,8 +1,5 @@
 package fr.telecompt.shavadoop.network;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
 import fr.telecompt.shavadoop.util.Constant;
 
 /**
@@ -39,7 +36,8 @@ public class FileTransfert extends ShellThread {
 			if (fromLocalToDistant) {
 				cmdLine = "scp " + fileToTreat + " " + username + "@" + distantHost + ":" + destFile;
 			} else {
-				if (bulk) {
+				String[] files = fileToTreat.split(Constant.SEP_SCP_FILES);
+				if (bulk && files.length > 1) {
 					cmdLine = "scp " + username + "@" + distantHost + ":{" + fileToTreat + "} " + destFile;
 				} else {
 					cmdLine = "scp " + username + "@" + distantHost + ":" + fileToTreat + " " + destFile;
@@ -48,10 +46,6 @@ public class FileTransfert extends ShellThread {
 			
 			try {
 				Process p = Runtime.getRuntime().exec(cmdLine);
-		        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
-		        while((stdOut.readLine())!=null){
-		            // do nothing, wait needed for scp
-		        }
 	            p.waitFor();
 	            p.destroy();
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmdLine);

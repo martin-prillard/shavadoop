@@ -40,6 +40,7 @@ public class Constant {
 	public final static String SEP_NAME_FILE = "_";
 	public final static String SEP_WORD = " ";
 	public final static String SEP_CONTAINS_FILE = ", ";
+	public final static String SEP_SCP_FILES = ",";
 	
 	// socket
 	public final static String SEP_SOCKET_MESSAGE = ";";
@@ -48,7 +49,6 @@ public class Constant {
 	public final static String ANSWER_TASKTRACKER_REQUEST_TASK_FINISHED = "TASK_FINISHED";
 	// job
 	private final static int BYTE_SIZE = 1000000;
-	public final static boolean TASK_TRACKER = Boolean.parseBoolean(new PropReader().getPropValues(PropReader.TASK_TRACKER));
 	public final static int THREAD_MAX_LIFETIME = Integer.parseInt(new PropReader().getPropValues(PropReader.THREAD_MAX_LIFETIME));
 	public final static int THREAD_MAX_SPLIT_MAPPING = 4;
 	public final static int BLOC_SIZE_MIN = Integer.parseInt(new PropReader().getPropValues(PropReader.BLOC_SIZE_MIN)) * BYTE_SIZE;

@@ -28,7 +28,6 @@ public class PropReader {
 	public static final String BLOC_SIZE_MIN = "bloc_size_min";
 	public static final String TASK_TRACKER_FREQ = "task_tracker_freq";
 	public static final String TASK_TRACKER_ANSWER_TIMEOUT = "task_tracker_answer_timeout";
-	public static final String TASK_TRACKER = "task_tracker";
 	
 	public String getPropValues(String key) {
 		 

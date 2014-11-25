@@ -1,7 +1,5 @@
 package fr.telecompt.shavadoop.master;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,10 +53,6 @@ public class LaunchShufflingMap extends ShellThread {
 				String cmd = getCmdJar(pathJar, nbWorker, hostMapper, method, fileToTreat, idWorker);
 				Process p = Runtime.getRuntime().exec(cmd);
 				if (Constant.MODE_DEBUG) System.out.println("On local : " + cmd);
-		        BufferedReader stdOut=new BufferedReader(new InputStreamReader(p.getInputStream()));
-		        while((stdOut.readLine())!=null){
-		            // do nothing, wait needed for scp
-		        }
 	            p.waitFor();
 	            p.destroy();
 			// execute on a distant computer

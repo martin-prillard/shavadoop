@@ -37,7 +37,6 @@ public class SSHManager {
 	private String dsaFile = null;
 	private String dsaKey = null;
 	private PropReader prop = new PropReader();
-	private String host;
 	private String hostFull;
 	private String hostFullMaster;
 	private String username = System.getProperty("user.name");
@@ -68,7 +67,6 @@ public class SSHManager {
 		
 		try {
 			hostFull = InetAddress.getLocalHost().getCanonicalHostName();
-			host = InetAddress.getLocalHost().getHostName();
 			ipAdress = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {e.printStackTrace();}
 		
@@ -81,9 +79,10 @@ public class SSHManager {
 	 * Return x hosts alive
 	 * @param nbWorker
 	 * @param random
+	 * @param forceInitialize
 	 * @return list host's cores alive
 	 */
-	public List<String> getHostAliveCores(int nbWorker, boolean random) {
+	public List<String> getHostAliveCores(int nbWorker, boolean random, boolean forceInitialize) {
 		
 		if (hostsNetwork == null) {
 			// get the list of hosts of the network
@@ -105,7 +104,7 @@ public class SSHManager {
 					hostAlive.add(host);
 					if (!initializedHost.contains(host)) {
 						initializedHost.add(host);
-						es.execute(new LaunchInitializeHost(this, es, host, true));
+						es.execute(new LaunchInitializeHost(this, es, host, true, forceInitialize));
 					}
 				} else if (isAlive(host)) {
 					for (int i = 0; i < getCoresNumber(host); i++) {
@@ -114,7 +113,7 @@ public class SSHManager {
 							hostAlive.add(host);
 							if (!initializedHost.contains(host)) {
 								initializedHost.add(host);
-								es.execute(new LaunchInitializeHost(this, es, host, false));
+								es.execute(new LaunchInitializeHost(this, es, host, false, forceInitialize));
 							}
 						} else {
 							break;
@@ -329,11 +328,6 @@ public class SSHManager {
 	
 	public String getUsername() {
 		return username;
-	}
-
-	
-	public String getHost() {
-		return host;
 	}
 
 
