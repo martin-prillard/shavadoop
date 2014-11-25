@@ -1,4 +1,4 @@
-## Shavadoop
+# Shavadoop
 
 My own implementation of MapReduce in Java.
 
@@ -13,20 +13,21 @@ TODO benchmark
 
 ## Hadoop VS Shavadoop
 
-#### Hadoop
+### Hadoop
 
 ![Hadoop MapReduce](res/readme/MapReduceWordCountOverview1.png)
 
-#### Shavadoop
+### Shavadoop
 
 TODO schema
 
+**Input splitting step :** the master split the file by line (if the size is less than 64mb), else by blocs. Each bloc is send to the mapper worker for the next step.
+
+**Split mapping step :** each worker count the number of words in the file and create files in almost equal numbers of workers. Indeed, thanks to the
 
 ##### Parallel distributed computing
 
 TODO schema thread
-
-TODO txt
 
 
 ## How to use Shavadoop
