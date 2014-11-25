@@ -3,12 +3,14 @@
 My own implementation of MapReduce in Java.
 
 Include :
-* launch wordcount with parallel distributed computing on a cluster of machines
-* task tracker to relaunch task failed
+* launch wordcount algorithm with parallel distributed computing on a cluster of machines
+* task tracker to manage and relaunch task failed, thanks to socket communication
 * manage files transfer between computers, thanks to scp
-* manage the number of cores of each computer connected
+* manage the number of cores of each computer connected to optimize parallel computing
 
-TODO benchmark
+![Benchmark](res/readme/benchmark.PNG)
+
+1 worker = 1 computer's core
 
 
 ## Hadoop VS Shavadoop
@@ -21,9 +23,21 @@ TODO benchmark
 
 TODO schema
 
-**Input splitting step :** the master split the file by line (if the size is less than 64mb), else by blocs. Each bloc is send to the mapper worker for the next step.
+**Initialization step :** the main repository is created / cleaned on each host and the network's ip adress may be automatically collected and stored if no source files are provided.
 
-**Split mapping step :** each worker count the number of words in the file and create files in almost equal numbers of workers. Indeed, thanks to the
+**Input splitting step :** the master split the file by line (if the size is less than 64 MB), else by blocs. Each bloc is send to the mapper worker for the next step.
+The file's name syntax : Sx, where x is a counter.
+
+**Split mapping step :** each worker count the number of words in the file and create files in almost equal numbers of workers. Indeed, thanks to this trip, every word is on the right file for the right reducer worker :
+TODO code
+It also noted that the combiner is integrated as standard. At the end, a dictionary is created to the next step : the shuffling.
+The file's name syntax : UM_x_W_y_fullhostname, where x is the mapper worker's id and y is the right reducer worker's id.
+
+**Suffling maps step :** 
+
+**Suffling maps step :** 
+
+**Assembling final maps step :** it's the last step, the master who has all the RM
 
 ##### Parallel distributed computing
 
