@@ -2,7 +2,7 @@
 
 My own implementation of MapReduce in Java.
 
-Include :
+This includes :
 * launch wordcount algorithm with parallel distributed computing on a cluster of machines
 * task tracker to manage and relaunch task failed, thanks to socket communication
 * manage files transfer between computers, thanks to scp
@@ -10,7 +10,7 @@ Include :
 
 ![Benchmark](res/readme/benchmark.PNG)
 
-1 worker = 1 computer's core
+1 worker = 1 computer CPU's core
 
 
 ## Hadoop VS Shavadoop
@@ -29,9 +29,10 @@ TODO schema
 *The file's name syntax : Sx, where x is a counter*
 
 **Split mapping step :** each worker count the number of words in the file and create files in almost equal numbers of workers. Indeed, thanks to this trip, every word is on the right file for the right reducer worker :
-'''
-Math.abs((int) (Util.simpleHash(key) % nbWorker)); // the hash on the key modulo the worker's number is always unique
-'''
+```
+// the hash on the key modulo the worker's number is always unique
+Math.abs((int) (Util.simpleHash(key) % nbWorker)); 
+```
 It also noted that the combiner is integrated as standard. 
 *The file's name syntax : UM_x_W_y_fullhostname, where x is the mapper worker's id and y is the right reducer worker's id*
 At the end and thanks to socket communication, a dictionary is created to the next step : the shuffling.
