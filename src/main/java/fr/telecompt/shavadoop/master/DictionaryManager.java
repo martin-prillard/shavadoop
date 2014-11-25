@@ -23,9 +23,9 @@ public class DictionaryManager extends Thread {
 	private ConcurrentHashMap<String, HashSet<Pair>> dictionary;
 	
 	
-	public DictionaryManager(int _portMaster, int _sizeFilesToMap, ConcurrentHashMap<String, HashSet<Pair>> _dictionary) {
+	public DictionaryManager(int _portMaster, int _nbWorkerMappers, ConcurrentHashMap<String, HashSet<Pair>> _dictionary) {
 		portMaster = _portMaster;
-		sizeFilesToMap = _sizeFilesToMap;
+		sizeFilesToMap = _nbWorkerMappers;
 		dictionary = _dictionary;
 	}
 	

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -92,7 +93,7 @@ public class Slave {
 	    		int threadQueueMaxByWorker = Integer.parseInt(prop.getPropValues(PropReader.THREAD_QUEUE_MAX_BY_WORKER));
 	    		
 	    		// launch shuffling map thread
-	    		ConcurrentHashMap<String, List<Integer>> sortedMaps = launchShufflingMapThread(threadMaxByWorker, threadQueueMaxByWorker);
+	    		ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> sortedMaps = launchShufflingMapThread(threadMaxByWorker, threadQueueMaxByWorker);
     			 
 				// sum sorted maps into the final maps
 	    		mappingSortedMapsInMemory(sortedMaps);
@@ -146,47 +147,44 @@ public class Slave {
              Map<String, Pair> partDictionary = new HashMap<String, Pair>();
              int idNextWorker = 0;
              
-			 if (totalLine > 0) { //TODO see how it's possible	
-	             
-	             // find the number of thread
-	             int nbChunks = Constant.THREAD_MAX_SPLIT_MAPPING;
-	             if (Constant.THREAD_MAX_SPLIT_MAPPING > totalLine) {
-	            	 nbChunks = totalLine; // one thread by line
-	             } 
-	             int restLineByThread = totalLine % nbChunks;
-	             // Calculate the number of lines for each thread
-	             int nbLineByThread = (totalLine - restLineByThread) / (nbChunks);
-	             
-	             ExecutorService es = Executors.newCachedThreadPool();
-	             
-	             // split the main list into smaller list for paralleling
-	             List<String> chunk = new ArrayList<String>();
-	             int nbChunksCreated = 0;
-	 			
-	             FileReader fic = new FileReader(fileToMap);
-	             BufferedReader read = new BufferedReader(fic);
-	             String line = null;
-	             
-	             // For each lines of the file
-	             while ((line = read.readLine()) != null) {
-	    			 // add line cleaned to the chunk
-	            	 chunk.add(line);
-	    			 // write the complete file by block or if it's the end of the file
-	    			 if ((chunk.size() == nbLineByThread && nbChunksCreated < nbChunks - 1)
-	    					 || (chunk.size() == nbLineByThread + restLineByThread && nbChunksCreated == nbChunks - 1)) {
-	    				 es.execute(new SplitMappingThread(unsortedMaps, chunk, nbWorker));
-	    				 ++nbChunksCreated;
-	    			   	 chunk = new ArrayList<String>();
-	    			 }
-	             } 
-	             fic.close();
-	             read.close();
-	             
-	        	 es.shutdown();
-	    		 try {
-	    			 es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
-	    		 } catch (InterruptedException e) {e.printStackTrace();}
-			 }
+             // find the number of thread
+             int nbChunks = Constant.THREAD_MAX_SPLIT_MAPPING;
+             if (Constant.THREAD_MAX_SPLIT_MAPPING > totalLine) {
+            	 nbChunks = totalLine; // one thread by line
+             } 
+             int restLineByThread = totalLine % nbChunks;
+             // Calculate the number of lines for each thread
+             int nbLineByThread = (totalLine - restLineByThread) / (nbChunks);
+             
+             ExecutorService es = Executors.newCachedThreadPool();
+             
+             // split the main list into smaller list for paralleling
+             List<String> chunk = new ArrayList<String>();
+             int nbChunksCreated = 0;
+ 			
+             FileReader fic = new FileReader(fileToMap);
+             BufferedReader read = new BufferedReader(fic);
+             String line = null;
+             
+             // For each lines of the file
+             while ((line = read.readLine()) != null) {
+    			 // add line cleaned to the chunk
+            	 chunk.add(line);
+    			 // write the complete file by block or if it's the end of the file
+    			 if ((chunk.size() == nbLineByThread && nbChunksCreated < nbChunks - 1)
+    					 || (chunk.size() == nbLineByThread + restLineByThread && nbChunksCreated == nbChunks - 1)) {
+    				 es.execute(new SplitMappingThread(unsortedMaps, chunk, nbWorker));
+    				 ++nbChunksCreated;
+    			   	 chunk = new ArrayList<String>();
+    			 }
+             } 
+             fic.close();
+             read.close();
+             
+        	 es.shutdown();
+    		 try {
+    			 es.awaitTermination(Constant.THREAD_MAX_LIFETIME, TimeUnit.MINUTES);
+    		 } catch (InterruptedException e) {e.printStackTrace();}
 			 
              // write the file
         	 for (ConcurrentHashMap<String, AtomicInteger> e : unsortedMaps) {
@@ -241,9 +239,9 @@ public class Slave {
     /**
      * Launch shuffling map process for each UM files in the DSM file
      */
-    private ConcurrentHashMap<String, List<Integer>> launchShufflingMapThread(int threadMaxByWorker, int threadQueueMaxByWorker) {
+    private ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> launchShufflingMapThread(int threadMaxByWorker, int threadQueueMaxByWorker) {
 		
-		ConcurrentHashMap<String, List<Integer>> sortedMaps = new ConcurrentHashMap<String, List<Integer>>();
+		ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> sortedMaps = new ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>();
 		
 		HashMap<String, List<String>> filesByHost = new HashMap<String, List<String>>();
 		
@@ -315,7 +313,7 @@ public class Slave {
 			
 			es = Util.fixedThreadPoolWithQueueSize(threadMaxByWorker, threadQueueMaxByWorker);
 			
-			// for each files
+			// for each UM files
 			for (Entry<String, List<String>> e : filesByHost.entrySet()) {
 				// files by host
 				for (String fileToShuffling : e.getValue()) {
@@ -332,7 +330,7 @@ public class Slave {
 				msgError = e.getMessage();
 				state = false;
 			}
-
+			
 		} catch (IOException e) {
 			System.out.println("No shuffling dictionary file : " + fileToTreat);
 			msgError = e.getMessage();
@@ -342,23 +340,22 @@ public class Slave {
 		return sortedMaps;
     }
     
+    
     /**
      * Reduce method in-memory
      * @param sortedMaps
      */
-    public void mappingSortedMapsInMemory(ConcurrentHashMap<String, List<Integer>> sortedMaps) {
+    public void mappingSortedMapsInMemory(ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> sortedMaps) {
         
 		 try {
 
  			// concat the localFinalMaps with the finalMapsInMemory
- 			for (Entry<String, List<Integer>> e : sortedMaps.entrySet()) {
+ 			for (Entry<String, CopyOnWriteArrayList<Integer>> e : sortedMaps.entrySet()) {
  				String word = e.getKey();
  				List<Integer> listCounter = e.getValue();
  				int counterTotal = 0;
  				for (int i = 0; i < listCounter.size(); i++) {
- 					if (listCounter.get(i) != null) { //TODO see
- 						counterTotal += listCounter.get(i);
- 					}
+					counterTotal += listCounter.get(i);
  				}
 				finalMapsInMemory.put(word, counterTotal);
  			}

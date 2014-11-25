@@ -90,7 +90,6 @@ public class SplitMappingThread extends Thread {
      * Increment the value atomically
      * @param idHashMap
      * @param key
-     * @see http://fr.slideshare.net/sjlee0/robust-and-scalable-concurrent-programming-lesson-from-the-trenches
      */
     private void increment(int idHashMap, String key) {
     	AtomicInteger value = unsortedMaps.get(idHashMap).get(key);

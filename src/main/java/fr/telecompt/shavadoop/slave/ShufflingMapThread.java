@@ -2,9 +2,8 @@ package fr.telecompt.shavadoop.slave;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import fr.telecompt.shavadoop.util.Constant;
 
@@ -17,9 +16,9 @@ public class ShufflingMapThread extends Thread {
 
 	private String fileToShuffling;
 	private Slave slave;
-	private volatile ConcurrentHashMap<String, List<Integer>> sortedMaps;
+	private ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> sortedMaps;
 	
-	public ShufflingMapThread(Slave _slave, ConcurrentHashMap<String, List<Integer>> _sortedMaps, String _fileToShuffling) {
+	public ShufflingMapThread(Slave _slave, ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> _sortedMaps, String _fileToShuffling) {
 		fileToShuffling = _fileToShuffling;
 		slave = _slave;
 		sortedMaps = _sortedMaps;
@@ -47,7 +46,7 @@ public class ShufflingMapThread extends Thread {
 	            String words[] = line.split(Constant.SEP_CONTAINS_FILE);
 	            String word = words[0];
 	            int counter = Integer.parseInt(words[1]);
-	            sortedMaps.putIfAbsent(word, new ArrayList<Integer>()); //TODO see
+            	sortedMaps.putIfAbsent(word, new CopyOnWriteArrayList<Integer>());
  				sortedMaps.get(word).add(counter);
              } 
              fic.close();
