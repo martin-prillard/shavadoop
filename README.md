@@ -1,9 +1,9 @@
-## Shavadoop <h1>
+## Shavadoop
 
-My own implementation of MapReduce in Java on a cluster of machines.
+My own implementation of MapReduce in Java.
 
 Include :
-* launch wordcount with parallel distributed computing
+* launch wordcount with parallel distributed computing on a cluster of machines
 * task tracker to relaunch task failed
 * manage files transfer between computers, thanks to scp
 * manage the number of cores of each computer connected
@@ -11,23 +11,25 @@ Include :
 TODO benchmark
 
 
-## Hadoop VS Shavadoop <h3>
+## Hadoop VS Shavadoop
 
-## Hadoop <h5>
+#### Hadoop
 
-![GitHub Logo](res/readme/MapReduceWordCountOverview1.png)
-TODO txt
+![Hadoop MapReduce](res/readme/MapReduceWordCountOverview1.png)
 
-
-## Shavadoop <h5>
+#### Shavadoop
 
 TODO schema
-TODO txt for each step
+
+
+##### Parallel distributed computing
+
 TODO schema thread
+
 TODO txt
 
 
-## How to use Shavadoop <h3>
+## How to use Shavadoop
 
 1. clone the project with git
 2. edit the config.properties file (included in the src root directory)
@@ -37,7 +39,7 @@ TODO txt
 6. enjoy the result. You can use the command : TODO
 
 
-## To the future <h3>
+## To the future
 
 * change Wordcount implementation to execute generic algorithm
 * export the properties file outside the jar (more convenient)
