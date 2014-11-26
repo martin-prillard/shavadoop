@@ -40,7 +40,7 @@ It also noted that the combiner is integrated as standard.
 
 **Suffling maps step :** from the DSM file dictionary, each reducer worker get the files they need to parse to store the counters for each word in memory.
 
-**Suffling maps step :** each reducer worker sum all the counters of the last step and send to the master a file which contains this informations
+**Mapping sorted maps step :** each reducer worker sum all the counters of the last step and send to the master a file which contains this informations
 <br/>*The file's name syntax : RM_y_fullhostname, where y is the reducer worker's id*
 
 **Assembling final maps step :** it's the last step, the master can merge all the RM files in one.
