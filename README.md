@@ -25,8 +25,11 @@ This includes :
 
 **Initialization step :** the main repository is created / cleaned on each host and the network's ip adress may be automatically collected and stored if no source files are provided.
 
+
 **Input splitting step :** the master split the file by line (if the size is less than 64 MB), else by blocs. Each bloc is send to the mapper worker for the next step.
+
 *The file's name syntax : Sx, where x is a counter*
+
 
 **Split mapping step :** each worker count the number of words in the file and create files in almost equal numbers of workers. Indeed, thanks to this trip, every word is on the right file for the right reducer worker :
 ```
@@ -34,19 +37,29 @@ This includes :
 Math.abs((int) (Util.simpleHash(key) % nbWorker)); 
 ```
 It also noted that the combiner is integrated as standard. 
+
 *The file's name syntax : UM_x_W_y_fullhostname, where x is the mapper worker's id and y is the right reducer worker's id*
+
 At the end and thanks to socket communication, a dictionary is created to the next step : the shuffling.
+
 *The file's name syntax : DSM_y, where y is the right reducer worker's id*
+
 
 **Suffling maps step :** from the DSM file dictionary, each reducer worker get the files they need to parse to store the counters for each word in memory.
 
 **Suffling maps step :** each reducer worker sum all the counters of the last step and send to the master a file which contains this informations
+
 *The file's name syntax : RM_y_fullhostname, where y is the reducer worker's id*
 
+
 **Assembling final maps step :** it's the last step, the master can merge all the RM files in one.
+
 *The file's name syntax : output, it's the result*
 
-##### Parallel distributed computing
+
+**The task tracker :** check frequently if a worker (mapper or reducer) is alive and it's working, thanks to socket communication. Else, the task tracker kill the job and relaunch the task on another worker available and ready to work hard.
+
+#### Parallel distributed computing
 
 ![Shavadoop MapReduce threads](res/readme/shavadoop_thread.PNG)
 
