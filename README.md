@@ -21,7 +21,7 @@ This includes :
 
 ### Shavadoop
 
-![Shavadoop MapReduce](res/readme/shavadoop.PNG)
+![Shavadoop MapReduce](res/readme/shavadoop.jpg)
 
 **Initialization step :** the main repository is created / cleaned on each host and the network's ip adress may be automatically collected and stored if no source files are provided.
 
@@ -50,7 +50,7 @@ It also noted that the combiner is integrated as standard.
 
 #### Parallel distributed computing
 
-![Shavadoop MapReduce threads](res/readme/shavadoop_thread.PNG)
+![Shavadoop MapReduce threads](res/readme/shavadoop_thread.jpg)
 
 <br/>
 ## How to use Shavadoop
