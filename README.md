@@ -1,6 +1,6 @@
 # Shavadoop
 
-My own implementation of MapReduce in Java.
+My own implementation of Hadoop MapReduce in Java.
 
 This includes :
 * launch wordcount algorithm on large files with parallel distributed computing via multiple computers in a network
