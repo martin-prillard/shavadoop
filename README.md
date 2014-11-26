@@ -21,7 +21,7 @@ This includes :
 
 ### Shavadoop
 
-TODO schema
+![Shavadoop MapReduce](res/readme/shavadoop.PNG)
 
 **Initialization step :** the main repository is created / cleaned on each host and the network's ip adress may be automatically collected and stored if no source files are provided.
 
