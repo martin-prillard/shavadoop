@@ -44,8 +44,7 @@ It also noted that the combiner is integrated as standard.
 <br/>*The file's name syntax : RM_y_fullhostname, where y is the reducer worker's id*
 
 **Assembling final maps step :** it's the last step, the master can merge all the RM files in one.
-
-*The file's name syntax : output, it's the result*
+<br/>*The file's name syntax : output, it's the result*
 
 **The task tracker :** check frequently if a worker (mapper or reducer) is alive and it's working, thanks to socket communication. Else, the task tracker kill the job and relaunch the task on another worker available and ready to work hard.
 
