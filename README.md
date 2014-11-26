@@ -48,18 +48,20 @@ At the end and thanks to socket communication, a dictionary is created to the ne
 
 ##### Parallel distributed computing
 
-TODO schema thread
+![Shavadoop MapReduce threads](res/readme/shavadoop_thread.PNG)
 
 
 ## How to use Shavadoop
 
-1. clone the project with git
+1. clone the project with gitt
 2. edit the config.properties file (included in the src root directory)
 3. generate the jar file with your favorite IDE (or use the terminal like a boss)
 4. from the terminal, execute the jar
 5. have a coffee (or not)
-6. enjoy the result. You can use the command : TODO
-
+6. enjoy the result with this command to see the thirty most frequently used words :
+```
+cat output | sort -k 2 -nr | head -30
+```
 
 ## To the future
 
