@@ -12,7 +12,7 @@ This includes :
 
 1 worker = 1 computer CPU's core
 
-
+<br/>
 ## Hadoop VS Shavadoop
 
 ### Hadoop
@@ -33,7 +33,7 @@ This includes :
 // the hash on the key modulo the worker's number is always unique
 Math.abs((int) (Util.simpleHash(key) % nbWorker)); 
 ```
-<br/>It also noted that the combiner is integrated as standard. 
+It also noted that the combiner is integrated as standard. 
 <br/>*The file's name syntax : UM_x_W_y_fullhostname, where x is the mapper worker's id and y is the right reducer worker's id*
 <br/>At the end and thanks to socket communication, a dictionary is created to the next step : the shuffling.
 <br/>*The file's name syntax : DSM_y, where y is the right reducer worker's id*
@@ -53,7 +53,7 @@ Math.abs((int) (Util.simpleHash(key) % nbWorker));
 
 ![Shavadoop MapReduce threads](res/readme/shavadoop_thread.PNG)
 
-
+<br/>
 ## How to use Shavadoop
 
 1. clone the project with gitt
@@ -65,7 +65,7 @@ Math.abs((int) (Util.simpleHash(key) % nbWorker));
 ```
 cat output | sort -k 2 -nr | head -30
 ```
-
+<br/>
 ## To the future
 
 * change Wordcount implementation to execute generic algorithm
