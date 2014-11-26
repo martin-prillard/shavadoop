@@ -71,5 +71,5 @@ cat output | sort -k 2 -nr | head -30
 * export the properties file outside the jar (more convenient)
 * optimize block's size in the Input Splitting step, with dynamic size (according to the number of mapper workers)
 * when the input file is splited into several blocs, it could cut a word in half (serialization with Avro to avoid that ?)
-* change the transfer file, currently with scp, by another way (scp has number limited connection)
+* change the transfer file, currently with scp, by another way because scp has number limited connection (use only socket ?)
 * add JUnit test for regression testing
