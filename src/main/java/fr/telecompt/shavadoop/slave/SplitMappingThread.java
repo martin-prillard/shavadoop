@@ -43,7 +43,7 @@ public class SplitMappingThread extends Thread {
         String clean = line;
         clean = clean.trim();
         // clean the non alpha numeric character or space
-        clean = clean.replaceAll("[^a-zA-Z0-9\\s]", "");
+        clean = clean.replaceAll("[^a-zA-Z0-9\\s]", " ");
         // just one space beetween each words
         clean = clean.replaceAll("\\s+", " ");
         clean = clean.replaceAll("\\t+", " ");
