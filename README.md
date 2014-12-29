@@ -55,7 +55,7 @@ It also noted that the combiner is integrated as standard.
 <br/>
 ## How to use Shavadoop
 
-1. clone the project with gitt
+1. clone the project with git
 2. edit the config.properties file (included in the src root directory)
 3. generate the jar file with your favorite IDE (or use the terminal like a boss)
 4. from the terminal, execute the jar
