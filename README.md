@@ -67,7 +67,7 @@ cat output | sort -k 2 -nr | head -30
 <br/>
 ## To the future
 
-* change Wordcount implementation to execute generic algorithm
+* change Wordcount implementation to execute any algorithms
 * export the properties file outside the jar (more convenient)
 * optimize block's size in the Input Splitting step, with dynamic size (according to the number of mapper workers)
 * when the input file is splited into several blocs, it could cut a word in half (serialization with Avro to avoid that ?)
