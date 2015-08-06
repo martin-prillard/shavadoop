@@ -2,11 +2,11 @@
 
 My own implementation of Hadoop MapReduce in Java.
 
-This includes :
-* launch wordcount algorithm on large files with parallel distributed computing via multiple computers in a network
-* task tracker to manage and relaunch task failed, thanks to socket communication
-* manage files transfer between computers, thanks to scp
-* manage the number of cores of each computer connected to optimize parallel computing
+This includes:
+* a parallel and distributed computing system via multiple computers in a local network
+* a simple Wordcount algorithm to apply on large files 
+* a JobTracker to relaunch tasks which failed during MapReduce process (socket communication)
+* the files's transfer between computers, thanks to scp (do not require a Distributed File System)
 
 ![Benchmark](res/readme/benchmark.PNG)
 
