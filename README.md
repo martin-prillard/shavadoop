@@ -46,7 +46,7 @@ It also noted that the combiner is integrated as standard.
 **Assembling final maps step :** it's the last step, the master can merge all the RM files in one.
 <br/>*The file's name syntax : output, it's the result*
 
-**The task tracker :** check frequently if a worker (mapper or reducer) is alive and it's working, thanks to socket communication. Else, the task tracker kill the job and relaunch the task on another worker available and ready to work hard.
+**The job tracker :** check frequently if a worker (mapper or reducer) is alive and it's working, thanks to socket communication. Else, the job tracker kill the job and relaunch the task on another worker available and ready to work hard.
 
 #### Parallel distributed computing
 
