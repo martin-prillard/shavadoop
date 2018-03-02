@@ -12,7 +12,7 @@ This includes:
 
 1 worker = 1 computer CPU's core
 
-<br/>
+
 ## Hadoop VS Shavadoop
 
 ### Hadoop
@@ -52,7 +52,6 @@ It also noted that the combiner is integrated as standard.
 
 ![Shavadoop MapReduce threads](res/readme/shavadoop_thread.jpg)
 
-<br/>
 ## How to use Shavadoop
 
 1. clone the project with git
@@ -64,7 +63,7 @@ It also noted that the combiner is integrated as standard.
 ```
 cat output | sort -k 2 -nr | head -30
 ```
-<br/>
+
 ## To the future
 
 * change Wordcount implementation to execute any algorithms
